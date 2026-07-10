@@ -1,0 +1,43 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build artifacts
+dist/
+build/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+
+# turbo
+.turbo/
+
+# env / secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# prisma generated
+apps/api/prisma/generated/
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# misc
+ *.pem
+ tmp/

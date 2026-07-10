@@ -1,0 +1,31 @@
+{
+  "name": "pos-saas",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SaaS POS multi-tenant MVP (inventarios, ventas, compras, caja, reportes, codigos de barra/QR)",
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20.10.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "db:migrate": "pnpm --filter @pos/api prisma:migrate",
+    "db:seed": "pnpm --filter @pos/api db:seed",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "clean": "turbo run clean && rimraf node_modules"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "turbo": "^2.3.3",
+    "typescript": "^5.6.3",
+    "rimraf": "^6.0.1"
+  }
+}

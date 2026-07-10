@@ -1,0 +1,198 @@
+// Prisma schema BASE (base de datos compartida `pos_saas`)
+// Contiene SOLO tablas compartidas a nivel plataforma.
+// Las tablas de cada tenant viven en su propio schema PostgreSQL,
+// generadas dinamicamente desde `prisma/tenants/template.prisma`.
+//
+// Ejecutar:
+//   pnpm prisma migrate dev --name init
+//
+// Para un nuevo tenant, la API corre el script `prisma/tenants/create-schema.ts`
+// el cual aplica el template sobre `tenant_<id>`.
+
+generator client {
+  provider = "prisma-client-js"
+  // Sin `output`: Prisma genera en `node_modules/@prisma/client` (canonico)
+  // y resuelve automaticamente `import { PrismaClient } from '@prisma/client'`.
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // Prisma 5.x usa shadowUrl; Prisma 6.x usa shadowDatabaseUrl (alias valido: directUrl)
+  // Si no necesitas migrar con shadow DB, puedes borrarlo.
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+// ============================================================
+//  TENANTS (comercios)
+// ============================================================
+
+model Tenant {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  schemaName  String   @unique // ej: "tenant_abc123"
+  plan        Plan     @default(STARTER)
+  status      TenantStatus @default(ACTIVE)
+  baseDomain  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       TenantUser[]
+  branches    Branch[]
+  subscription Subscription?
+  usage       UsageCounter[]
+
+  @@index([status])
+}
+
+enum Plan {
+  STARTER
+  GROWTH
+  PRO
+}
+
+enum BranchLimit {
+  STARTER   @map("STARTER")
+  GROWTH    @map("GROWTH")
+  PRO       @map("PRO")
+}
+
+enum TenantStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+  PAUSED
+}
+
+// ============================================================
+//  AUTH (usuarios globales)
+// ============================================================
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  emailVerified DateTime?
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenants      TenantUser[]
+
+  @@index([email])
+}
+
+model TenantUser {
+  userId   String
+  tenantId String
+  role     Role
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@id([userId, tenantId])
+  @@index([tenantId])
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MANAGER
+  CASHIER
+}
+
+// ============================================================
+//  BRANCHES (sucursales) - tabla compartida para resolucion tenant/branch
+//  El resto de datos de la sucursal (taxes, cash_sessions) viven en el schema tenant.
+// ============================================================
+
+model Branch {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  code      String   // ej: "MEX01"
+  createdAt DateTime @default(now())
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+}
+
+// ============================================================
+//  BILLING / SUBSCRIPTIONS
+// ============================================================
+
+model Subscription {
+  id              String   @id @default(cuid())
+  tenantId        String   @unique
+  stripeCustomerId String? @unique
+  stripeSubId     String?  @unique
+  status          SubscriptionStatus
+  currentPeriodEnd DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+}
+
+model UsageCounter {
+  id           String   @id @default(cuid())
+  tenantId     String
+  period       String   // YYYY-MM
+  branchCount  Int      @default(0)
+  productCount Int      @default(0)
+  saleCount    Int      @default(0)
+  updatedAt    DateTime @updatedAt
+
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, period])
+}
+
+// ============================================================
+//  APPLICATION SUPPORT
+// ============================================================
+
+model IdempotencyRecord {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  tenantId    String?
+  userId      String?
+  endpoint    String
+  requestBody  Json
+  responseStatus Int
+  responseBody Json
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
+
+  @@index([tenantId])
+  @@index([expiresAt])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  tenantId    String?
+  userId      String?
+  action      String
+  entity      String
+  entityId    String?
+  changes     Json?
+  ip          String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, createdAt])
+  @@index([userId])
+}
