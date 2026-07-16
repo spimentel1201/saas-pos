@@ -1,17 +1,23 @@
 ﻿import { Module } from '@nestjs/common';
+import { TenantContextModule } from '../../shared/infrastructure/multi-tenant/tenant-context.module.js';
+import { InventoryModule } from '../inventory/inventory.module.js';
+import { PurchasingUseCases } from './application/use-cases/purchasing.use-case.js';
+import { PurchasingController } from './infrastructure/http/purchasing.controller.js';
+import {
+  PrismaPurchaseOrderRepository,
+  PrismaSupplierRepository,
+} from './infrastructure/repositories/prisma-purchasing.repository.js';
+import { PURCHASE_ORDER_REPO, SUPPLIER_REPO, TENANT_SCHEMA } from './purchasing.tokens.js';
 
-/**
- * PurchasingModule - modulo de dominio.
- *
- * Estructura DDD-lite (ver PLAN-MVP-POS-SAAS.md seccion 4.2):
- *   domain/         entidades, value objects, reglas puras
- *   application/    casos de uso, servicios, DTOs
- *   infrastructure/ controllers, repos Prisma, eventos, adaptadores
- */
 @Module({
-  imports: [],
-  controllers: [],
-  providers: [],
-  exports: [],
+  imports: [TenantContextModule, InventoryModule],
+  controllers: [PurchasingController],
+  providers: [
+    PurchasingUseCases,
+    { provide: SUPPLIER_REPO, useClass: PrismaSupplierRepository },
+    { provide: PURCHASE_ORDER_REPO, useClass: PrismaPurchaseOrderRepository },
+    { provide: TENANT_SCHEMA, useFactory: () => '', inject: [] },
+  ],
+  exports: [PurchasingUseCases],
 })
 export class PurchasingModule {}
