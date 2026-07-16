@@ -26,11 +26,10 @@ import { PrismaModule } from './shared/infrastructure/prisma/prisma.module.js';
 // Los modulos no implementados se comentan para que el build pase; se descomentan cuando se implementen.
 import { AuthModule } from './modules/auth/auth.module.js';
 import { BillingModule } from './modules/billing/billing.module.js';
+import { CatalogModule } from './modules/catalog/catalog.module.js';
 import { TenantsModule } from './modules/tenants/tenants.module.js';
-// import { UsersModule } from './modules/users/users.module.js';
-// import { CatalogModule } from './modules/catalog/catalog.module.js';
-// import { InventoryModule } from './modules/inventory/inventory.module.js';
-// import { PurchasingModule } from './modules/purchasing/purchasing.module.js';
+import { InventoryModule } from './modules/inventory/inventory.module.js';
+import { PurchasingModule } from './modules/purchasing/purchasing.module.js';
 // import { SalesModule } from './modules/sales/sales.module.js';
 // import { CashModule } from './modules/cash/cash.module.js';
 // import { CustomersModule } from './modules/customers/customers.module.js';
@@ -58,7 +57,9 @@ import { TenantsModule } from './modules/tenants/tenants.module.js';
     AuthModule,
     TenantsModule,
     BillingModule,
-    // UsersModule, CatalogModule, InventoryModule, PurchasingModule,
+    CatalogModule,
+    InventoryModule,
+    PurchasingModule,
     // SalesModule, CashModule, CustomersModule, ReportsModule,
     // CodesModule, StorageModule, NotificationsModule,
   ],
