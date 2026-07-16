@@ -1,17 +1,22 @@
 ﻿import { Module } from '@nestjs/common';
+import { TenantContextModule } from '../../shared/infrastructure/multi-tenant/tenant-context.module.js';
+import { InventoryUseCases } from './application/use-cases/inventory.use-case.js';
+import { InventoryController } from './infrastructure/http/inventory.controller.js';
+import {
+  PrismaStockRepository,
+  PrismaTransferRepository,
+} from './infrastructure/repositories/prisma-inventory.repository.js';
+import { STOCK_REPO, TENANT_SCHEMA, TRANSFER_REPO } from './inventory.tokens.js';
 
-/**
- * InventoryModule - modulo de dominio.
- *
- * Estructura DDD-lite (ver PLAN-MVP-POS-SAAS.md seccion 4.2):
- *   domain/         entidades, value objects, reglas puras
- *   application/    casos de uso, servicios, DTOs
- *   infrastructure/ controllers, repos Prisma, eventos, adaptadores
- */
 @Module({
-  imports: [],
-  controllers: [],
-  providers: [],
-  exports: [],
+  imports: [TenantContextModule],
+  controllers: [InventoryController],
+  providers: [
+    InventoryUseCases,
+    { provide: STOCK_REPO, useClass: PrismaStockRepository },
+    { provide: TRANSFER_REPO, useClass: PrismaTransferRepository },
+    { provide: TENANT_SCHEMA, useFactory: () => '', inject: [] },
+  ],
+  exports: [InventoryUseCases],
 })
 export class InventoryModule {}
