@@ -1,0 +1,111 @@
+﻿node.exe : .\apps\api\src\modules\reports\infrastructure\templates\excel-templates.ts:8:8 
+lint/complexity/noStaticOnlyClass ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+En línea: 1 Carácter: 1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (.\apps\api\src\...ÔöüÔöüÔöüÔöüÔöü:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+  ├ù Avoid classes that contain only static members.
+  
+      6 Ôöé } from '../../domain/entities/report.entities.js';
+      7 Ôöé 
+    > 8 Ôöé export class ExcelTemplates {
+        Ôöé        ^^^^^^^^^^^^^^^^^^^^^^
+    > 9 Ôöé   static dailySales(data: DailySalesReport[]): import('exceljs').Workbook {
+         ...
+  > 154 Ôöé     return workbook;
+  > 155 Ôöé   }
+  > 156 Ôöé }
+        Ôöé ^
+    157 Ôöé 
+  
+  i Prefer using simple functions instead of classes with only static members.
+  
+
+.\apps\api\src\modules\reports\infrastructure\templates\excel-templates.ts:47:5 lint/complexity/noForEach 
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+
+  ├ù Prefer for...of instead of forEach.
+  
+    45 Ôöé     });
+    46 Ôöé 
+  > 47 Ôöé     sheet.columns.forEach((col) => {
+       Ôöé     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 48 Ôöé       col.width = 18;
+  > 49 Ôöé     });
+       Ôöé     ^^
+    50 Ôöé     return workbook;
+    51 Ôöé   }
+  
+  i forEach may lead to performance issues when working with large arrays. When combined with functions like filter or 
+map, this causes multiple iterations over the same type.
+  
+
+.\apps\api\src\modules\reports\infrastructure\templates\excel-templates.ts:79:5 lint/complexity/noForEach 
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+
+  ├ù Prefer for...of instead of forEach.
+  
+    77 Ôöé     });
+    78 Ôöé 
+  > 79 Ôöé     sheet.columns.forEach((col) => {
+       Ôöé     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 80 Ôöé       col.width = 18;
+  > 81 Ôöé     });
+       Ôöé     ^^
+    82 Ôöé     return workbook;
+    83 Ôöé   }
+  
+  i forEach may lead to performance issues when working with large arrays. When combined with functions like filter or 
+map, this causes multiple iterations over the same type.
+  
+
+.\apps\api\src\modules\reports\infrastructure\templates\excel-templates.ts:110:5 lint/complexity/noForEach 
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+
+  ├ù Prefer for...of instead of forEach.
+  
+    108 Ôöé     });
+    109 Ôöé 
+  > 110 Ôöé     sheet.columns.forEach((col) => {
+        Ôöé     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 111 Ôöé       col.width = 18;
+  > 112 Ôöé     });
+        Ôöé     ^^
+    113 Ôöé     return workbook;
+    114 Ôöé   }
+  
+  i forEach may lead to performance issues when working with large arrays. When combined with functions like filter or 
+map, this causes multiple iterations over the same type.
+  
+
+.\apps\api\src\modules\reports\infrastructure\templates\excel-templates.ts:151:5 lint/complexity/noForEach 
+ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+
+  ├ù Prefer for...of instead of forEach.
+  
+    149 Ôöé     });
+    150 Ôöé 
+  > 151 Ôöé     sheet.columns.forEach((col) => {
+        Ôöé     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 152 Ôöé       col.width = 18;
+  > 153 Ôöé     });
+        Ôöé     ^^
+    154 Ôöé     return workbook;
+    155 Ôöé   }
+  
+  i forEach may lead to performance issues when working with large arrays. When combined with functions like filter or 
+map, this causes multiple iterations over the same type.
+  
+
+Checked 201 files in 1083ms. No fixes applied.
+Found 5 errors.
+check ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔö
+üÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔ
+öüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+
+  ├ù Some errors were emitted while running checks.
+  
+

@@ -1,17 +1,13 @@
 ﻿import { Module } from '@nestjs/common';
+import { UserUseCases } from './application/use-cases/user.use-case.js';
+import { RolesGuard } from './domain/guards/roles.guard.js';
+import { UserController } from './infrastructure/http/user.controller.js';
+import { PrismaUserRepository } from './infrastructure/repositories/prisma-user.repository.js';
+import { USER_REPO } from './users.tokens.js';
 
-/**
- * UsersModule - modulo de dominio.
- *
- * Estructura DDD-lite (ver PLAN-MVP-POS-SAAS.md seccion 4.2):
- *   domain/         entidades, value objects, reglas puras
- *   application/    casos de uso, servicios, DTOs
- *   infrastructure/ controllers, repos Prisma, eventos, adaptadores
- */
 @Module({
-  imports: [],
-  controllers: [],
-  providers: [],
-  exports: [],
+  controllers: [UserController],
+  providers: [UserUseCases, RolesGuard, { provide: USER_REPO, useClass: PrismaUserRepository }],
+  exports: [UserUseCases, RolesGuard],
 })
 export class UsersModule {}

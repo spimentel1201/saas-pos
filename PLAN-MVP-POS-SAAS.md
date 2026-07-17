@@ -238,48 +238,67 @@ export class SalesModule {}
 ## 5. Modelo de datos core (simplificado)
 
 ```text
+-- SHARED SCHEMA (public)
 tenants(id, name, plan, status, created_at)
 users(id, email, password_hash, name)
 tenants_users(tenant_id, user_id, role)        -- owner | admin | manager | cashier
-branches(id, tenant_id, name, address, timezone, tax_rate)
-taxes(id, tenant_id, name, rate, type)          -- IVA 16%, exento, etc.
+branches(id, tenant_id, name, code)            -- shared para resolucion, metadata
+subscriptions(id, tenant_id, plan, stripe_id, status, current_period_end)
+usage_counters(id, tenant_id, branch_count, product_count, sale_count, period)
+audit_log(id, tenant_id, user_id, action, entity, entity_id, changes, ip, user_agent)
 
-products(id, tenant_id, sku, barcode, name, description, category_id,
+-- TENANT SCHEMA
+branches_tenant(id UUID, name, code, address, city, timezone, active)
+taxes(id, name, rate, type)                    -- IVA 16%, exento, etc.
+tenant_settings(id, key, value JSONB)          -- currency, timezone, ticket_header, etc.
+
+products(id, sku, barcode, name, description, category_id,
          cost, price, tax_id, type, track_stock, active,
          image_public_id, image_url)
 product_variants(id, product_id, sku, barcode, attributes JSONB)
-categories(id, tenant_id, name, parent_id)
+categories(id, name, parent_id)
 
-inventory_stocks(id, branch_id, product_id, qty, reserved, min, max, version)
-inventory_movements(id, stock_id, type, delta, reason, ref, user_id, created_at)
+customers(id UUID, name, email, phone, type, document_type, document_number,
+          address, city, state, zip_code, tax_id, credit_balance, notes,
+          active, created_by, created_at, updated_at)
+  -- type: INDIVIDUAL | BUSINESS
+  -- document_type: DNI | RUC | CE | PASSPORT
+
+inventory_stocks(id, branch_id UUID, product_id, qty, reserved, min, max, avg_cost, version)
+inventory_movements(id, stock_id, type, delta, reason, ref, branch_id UUID, user_id, created_at)
   -- type: purchase | sale | adjustment | transfer | return | loss
-stock_transfers(id, from_branch, to_branch, status, items JSONB)
+stock_transfers(id, from_branch_id UUID, to_branch_id UUID, status, items JSONB)
 
-suppliers(id, tenant_id, name, contact, tax_id)
-purchase_orders(id, tenant_id, branch_id, supplier_id, status, total, items JSONB)
-purchase_receipts(po_id, received_at, items JSONB)
+suppliers(id, name, contact, tax_id, email, phone)
+purchase_orders(id, branch_id UUID, supplier_id, status, total, items JSONB)
+purchase_receipts(id, po_id, received_at, received_by, items JSONB)
 
-sales(id, tenant_id, branch_id, user_id, cashier_session_id, number_seq,
-      subtotal, tax, discount, total, payment JSONB, status, customer_id, created_at)
-sale_items(id, sale_id, product_id, qty, unit_price, tax, total)
+sales(id, branch_id UUID, user_id, cashier_session_id, number_seq,
+      customer_id UUID, subtotal, tax, discount, total, status, meta, created_at)
+sale_items(id, sale_id, product_id, variant_id, qty, unit_price, tax_amount, discount, total)
 sale_payments(id, sale_id, method, amount, ref)
 returns(id, sale_id, reason, items JSONB, total)
 
-customers(id, tenant_id, name, email, phone, tax_id, credit_balance)
+cash_sessions(id, branch_id UUID, user_id, opened_at, closed_at,
+              opening_balance, expected_balance, counted_balance, difference, status)
+cash_movements(id, session_id, type, amount, reason)
 
-cash_sessions(id, branch_id, user_id, opened_at, closed_at,
-              opening_balance, expected, counted, difference, status)
-cash_movements(id, session_id, type, amount, reason)  -- in | out
-
-subscriptions(id, tenant_id, plan, stripe_id, status, current_period_end)
-usage_counters(id, tenant_id, branch_count, product_count, sale_count, period)
+-- MATERIALIZED VIEWS
+_mv_sales_daily(branch_id, day, product_id, sales_count, qty_sold, gross_total, gross_profit)
+_mv_inventory_valuation(branch_id, product_id, qty, avg_cost, valuation)
+_mv_sales_by_category(branch_id, day, category_id, gross_total, gross_profit, qty_sold)
+_mv_cash_summary(branch_id, day, session_count, total_opening, total_expected, total_counted, total_difference)
 ```
 
 **Notas:**
 
+- `branches` existe en shared (para resolucion) y en tenant schema (para datos completos con UUID).
+- `branch_id UUID` en todas las tablas tenant (reemplaza `branch_code text` del MVP original).
+- `customers` soporta INDIVIDUAL/BUSINESS con DNI/RUC para Peru.
+- `tenant_settings` almacena configuracion flexible (currency, timezone, ticket_header, etc.).
+- `audit_log` en shared schema para trazabilidad de cambios en configuracion.
 - `version` en `inventory_stocks` para lock optimista en operaciones concurrentes.
-- `number_seq` en `sales` debe ser secuencial por sucursal y por día (slot sequence en Redis o secuencia PostgreSQL por schema).
-- JSONB en `payment`, `items`, `attributes` para flexibilidad; añade GIN index si haces查询 sobre ellos.
+- `number_seq` en `sales` debe ser secuencial por sucursal y por día.
 
 ---
 
@@ -341,21 +360,25 @@ usage_counters(id, tenant_id, branch_count, product_count, sale_count, period)
 - Corte Z diario por sucursal
 - Vinculación de ventas por sesión
 
-### Módulo H — Clientes (CRM ligero)
+### Módulo H — Clientes (CRM ligero) ✅ IMPLEMENTADO
 
-- CRUD clientes, búsqueda por teléfono en POS
-- Crédito de tienda (monedero) opcional
-- Historial de compras
+- CRUD clientes con validación DNI/RUC para Peru
+- Tipos: INDIVIDUAL (DNI) / BUSINESS (RUC)
+- Búsqueda rápida para POS: nombre, teléfono, email, DNI, RUC
+- Crédito de tienda (monedero) con ajuste
+- Historial de compras por cliente
+- Soft delete (desactivar)
 
-### Módulo I — Reportes
+### Módulo I — Reportes ✅ IMPLEMENTADO
 
-- Ventas por día / sucursal / producto / categoría / cajero / método de pago
-- Inventario valorizado (costo promedio / FIFO toggle)
-- Utilidad bruta
-- Top productos / productos sin movimiento
+- Ventas por día / sucursal / producto / categoría
+- Inventario valorizado (costo promedio)
 - Reporte de caja y diferencias
-- Export CSV / Excel / PDF
-- Dashboard home (KPIs: ventas hoy, ticket promedio, stock crítico, heatmap de ventas por hora)
+- Export Excel con plantillas personalizadas (colores, formato)
+- Dashboard home (KPIs: ventas hoy, ticket promedio, stock crítico)
+- Heatmap de ventas por hora
+- Materialized views refresh cada hora (BullMQ)
+- Hybrid approach: MVs para histórico + live query para hoy
 
 ### Módulo J — Suscripción y Billing
 
@@ -364,18 +387,21 @@ usage_counters(id, tenant_id, branch_count, product_count, sale_count, period)
 - Trials 14 días
 - Downgrade con gracia (read-only al expirar)
 
-### Módulo K — Configuración
+### Módulo K — Configuración ✅ IMPLEMENTADO
 
-- Sucursales, impuestos, moneda, timezone
-- Personalización: logo, colores, datos en ticket
-- Usuarios y roles
-- Integraciones: hardware de impresora, webhooks
+- Sucursales CRUD (UUID, código inmutable, timezone por branch)
+- Impuestos CRUD (PERCENT, EXEMPT, FIXED)
+- Configuración tenant: currency, timezone, ticket_header, ticket_footer, brand_color
+- Ticket header personalizable (nombre negocio, logo, dirección, teléfono)
+- Usuarios y roles con RBAC (@Roles decorator + RolesGuard)
+- Auditoría de cambios (@Audit decorator → audit_log)
+- Integraciones: hardware de impresora, webhooks (pendiente)
 
 ---
 
-## 7. Roles y permisos (RBAC)
+## 7. Roles y permisos (RBAC) ✅ IMPLEMENTADO
 
-| Acción | owner | admin | manager | cashier |
+| Acción | OWNER | ADMIN | MANAGER | CASHIER |
 |--------|:-----:|:-----:|:-------:|:-------:|
 | Ver dashboard | ✅ | ✅ | ✅ | ✅ |
 | Operar POS | ✅ | ✅ | ✅ | ✅ |
@@ -383,9 +409,14 @@ usage_counters(id, tenant_id, branch_count, product_count, sale_count, period)
 | Gestión productos | ✅ | ✅ | ✅ | ❌ |
 | Compras / proveedores | ✅ | ✅ | ✅ | ❌ |
 | Transferencias inventario | ✅ | ✅ | ✅ | ❌ |
-| Reportes | ✅ | ✅ | ✅ (solo sucursal) | ❌ |
+| Ver historial clientes | ✅ | ✅ | ✅ | ✅ |
+| Editar crédito clientes | ✅ | ✅ | ❌ | ❌ |
+| Reportes | ✅ | ✅ | ✅ | ❌ |
 | Configuración tenant | ✅ | ✅ | ❌ | ❌ |
-| Gestión usuarios / billing | ✅ | ❌ | ❌ | ❌ |
+| Gestión usuarios | ✅ | ✅ | ❌ | ❌ |
+| Billing | ✅ | ❌ | ❌ | ❌ |
+
+**Implementación:** `@Roles()` decorator + `RolesGuard` (NestJS guard). Roles en JWT payload verificados server-side.
 
 ---
 

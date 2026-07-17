@@ -9,6 +9,23 @@ CREATE SCHEMA IF NOT EXISTS :schema_name;
 SET search_path TO :schema_name;
 
 -- --------------------------------------------------------
+--  SUCURSALES
+-- --------------------------------------------------------
+
+CREATE TABLE branches (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name        text NOT NULL,
+  code        text NOT NULL,
+  address     text,
+  city        text,
+  timezone    text NOT NULL DEFAULT 'America/Lima',
+  active      boolean NOT NULL DEFAULT true,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  updated_at  timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX idx_branches_code ON branches(code);
+
+-- --------------------------------------------------------
 --  CATALOGO
 -- --------------------------------------------------------
 
@@ -63,18 +80,53 @@ CREATE TABLE product_variants (
 CREATE UNIQUE INDEX uq_variants_sku ON product_variants(sku);
 CREATE INDEX idx_variants_product ON product_variants(product_id);
 
+-- --------------------------------------------------------
+--  CLIENTES
+-- --------------------------------------------------------
+
 CREATE TABLE customers (
-  id              text PRIMARY KEY,
+  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name            text NOT NULL,
   email           text,
   phone           text,
+  type            text NOT NULL DEFAULT 'INDIVIDUAL' CHECK (type IN ('INDIVIDUAL','BUSINESS')),
+  document_type   text CHECK (document_type IN ('DNI','RUC','CE','PASSPORT')),
+  document_number text,
+  address         text,
+  city            text,
+  state           text,
+  zip_code        text,
   tax_id          text,
   credit_balance  numeric(14,4) NOT NULL DEFAULT 0,
   notes           text,
-  created_at      timestamptz NOT NULL DEFAULT now()
+  active          boolean NOT NULL DEFAULT true,
+  created_by      text,
+  created_at      timestamptz NOT NULL DEFAULT now(),
+  updated_at      timestamptz NOT NULL DEFAULT now()
 );
+CREATE UNIQUE INDEX idx_customers_document ON customers(document_type, document_number) WHERE document_number IS NOT NULL;
 CREATE INDEX idx_customers_phone ON customers(phone);
 CREATE INDEX idx_customers_email ON customers(email);
+CREATE INDEX idx_customers_name ON customers USING gin(to_tsvector('spanish', name));
+
+-- --------------------------------------------------------
+--  CONFIGURACION
+-- --------------------------------------------------------
+
+CREATE TABLE tenant_settings (
+  id          serial PRIMARY KEY,
+  key         text UNIQUE NOT NULL,
+  value       jsonb NOT NULL,
+  updated_at  timestamptz NOT NULL DEFAULT now()
+);
+
+INSERT INTO tenant_settings (key, value) VALUES
+  ('currency', '"PEN"'),
+  ('timezone', '"America/Lima"'),
+  ('tax_included', 'true'),
+  ('ticket_header', '{"business_name": "", "logo_url": "", "address": "", "phone": ""}'),
+  ('ticket_footer', '{"message": "Gracias por su compra!", "return_policy": ""}'),
+  ('brand_color', '"#3B82F6"');
 
 -- --------------------------------------------------------
 --  INVENTARIO
@@ -82,7 +134,7 @@ CREATE INDEX idx_customers_email ON customers(email);
 
 CREATE TABLE inventory_stocks (
   id           bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  branch_code  text NOT NULL,
+  branch_id    uuid NOT NULL REFERENCES branches(id),
   product_id   text NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   qty          numeric(14,4) NOT NULL DEFAULT 0,
   reserved     numeric(14,4) NOT NULL DEFAULT 0,
@@ -92,7 +144,7 @@ CREATE TABLE inventory_stocks (
   version      integer NOT NULL DEFAULT 1,
   updated_at   timestamptz NOT NULL DEFAULT now()
 );
-CREATE UNIQUE INDEX uq_stock_branch_product ON inventory_stocks(branch_code, product_id);
+CREATE UNIQUE INDEX uq_stock_branch_product ON inventory_stocks(branch_id, product_id);
 
 CREATE TABLE inventory_movements (
   id            bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -101,22 +153,22 @@ CREATE TABLE inventory_movements (
   delta         numeric(14,4) NOT NULL,
   reason        text,
   ref           text,
-  branch_code   text NOT NULL,
+  branch_id     uuid NOT NULL,
   user_id       text NOT NULL,
   created_at    timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_movements_stock ON inventory_movements(stock_id, created_at DESC);
-CREATE INDEX idx_movements_branch_date ON inventory_movements(branch_code, created_at DESC);
+CREATE INDEX idx_movements_branch_date ON inventory_movements(branch_id, created_at DESC);
 
 CREATE TABLE stock_transfers (
-  id           text PRIMARY KEY,
-  from_branch  text NOT NULL,
-  to_branch    text NOT NULL,
-  status       text NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','SHIPPED','RECEIVED','CANCELED')),
-  items        jsonb NOT NULL,
-  created_by   text NOT NULL,
-  created_at   timestamptz NOT NULL DEFAULT now(),
-  updated_at   timestamptz NOT NULL DEFAULT now()
+  id              text PRIMARY KEY,
+  from_branch_id  uuid NOT NULL,
+  to_branch_id    uuid NOT NULL,
+  status          text NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','SHIPPED','RECEIVED','CANCELED')),
+  items           jsonb NOT NULL,
+  created_by      text NOT NULL,
+  created_at      timestamptz NOT NULL DEFAULT now(),
+  updated_at      timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_transfers_status ON stock_transfers(status);
 
@@ -136,7 +188,7 @@ CREATE TABLE suppliers (
 
 CREATE TABLE purchase_orders (
   id            text PRIMARY KEY,
-  branch_code   text NOT NULL,
+  branch_id     uuid NOT NULL,
   supplier_id   text NOT NULL REFERENCES suppliers(id),
   status        text NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT','SENT','PARTIAL','RECEIVED','CANCELED')),
   total         numeric(14,4) NOT NULL DEFAULT 0,
@@ -162,11 +214,11 @@ CREATE INDEX idx_receipts_po ON purchase_receipts(po_id);
 
 CREATE TABLE sales (
   id                  text PRIMARY KEY,
-  branch_code         text NOT NULL,
+  branch_id           uuid NOT NULL,
   user_id             text NOT NULL,
   cashier_session_id  bigint,
   number_seq          integer NOT NULL,
-  customer_id         text REFERENCES customers(id),
+  customer_id         uuid REFERENCES customers(id),
   subtotal            numeric(14,4) NOT NULL,
   tax                 numeric(14,4) NOT NULL DEFAULT 0,
   discount            numeric(14,4) NOT NULL DEFAULT 0,
@@ -175,9 +227,8 @@ CREATE TABLE sales (
   meta                jsonb NOT NULL DEFAULT '{}',
   created_at          timestamptz NOT NULL DEFAULT now()
 );
--- Índice único simplificado sin date_trunc (evita problema IMMUTABLE)
-CREATE UNIQUE INDEX uq_sales_number_seq_day ON sales(branch_code, created_at, number_seq);
-CREATE INDEX idx_sales_created ON sales(branch_code, created_at DESC);
+CREATE UNIQUE INDEX uq_sales_number_seq_day ON sales(branch_id, created_at, number_seq);
+CREATE INDEX idx_sales_created ON sales(branch_id, created_at DESC);
 CREATE INDEX idx_sales_status ON sales(status);
 CREATE INDEX idx_sales_customer ON sales(customer_id) WHERE customer_id IS NOT NULL;
 
@@ -220,7 +271,7 @@ CREATE INDEX idx_returns_sale ON returns(sale_id);
 
 CREATE TABLE cash_sessions (
   id                bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  branch_code       text NOT NULL,
+  branch_id         uuid NOT NULL,
   user_id           text NOT NULL,
   opened_at         timestamptz NOT NULL DEFAULT now(),
   closed_at         timestamptz,
@@ -231,7 +282,7 @@ CREATE TABLE cash_sessions (
   status            text NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN','CLOSED','RECONCILING')),
   notes             text
 );
-CREATE INDEX idx_cash_session_branch_status ON cash_sessions(branch_code, status);
+CREATE INDEX idx_cash_session_branch_status ON cash_sessions(branch_id, status);
 CREATE INDEX idx_cash_session_user ON cash_sessions(user_id);
 
 CREATE TABLE cash_movements (
@@ -250,28 +301,82 @@ CREATE INDEX idx_cash_movements_session ON cash_movements(session_id);
 
 CREATE MATERIALIZED VIEW _mv_sales_daily AS
 SELECT
-  branch_code,
-  date_trunc('day', created_at) AS day,
-  product_id,
+  s.branch_id,
+  b.name AS branch_name,
+  date_trunc('day', s.created_at) AS day,
+  si.product_id,
+  p.name AS product_name,
+  p.category_id,
+  c.name AS category_name,
+  s.user_id,
   count(*) AS sales_count,
-  sum(qty) AS qty_sold
+  sum(si.qty) AS qty_sold,
+  sum(si.total) AS gross_total,
+  sum(si.total - si.qty * p.cost) AS gross_profit
 FROM sales s
+JOIN branches b ON b.id = s.branch_id
 JOIN sale_items si ON si.sale_id = s.id
+JOIN products p ON p.id = si.product_id
+LEFT JOIN categories c ON c.id = p.category_id
 WHERE s.status = 'COMPLETED'
-GROUP BY branch_code, date_trunc('day', created_at), product_id
+GROUP BY s.branch_id, b.name, date_trunc('day', s.created_at), si.product_id, p.name, p.category_id, c.name, s.user_id
 WITH NO DATA;
 
-CREATE UNIQUE INDEX ON _mv_sales_daily (branch_code, day, product_id);
+CREATE UNIQUE INDEX ON _mv_sales_daily (branch_id, day, product_id);
 
 CREATE MATERIALIZED VIEW _mv_inventory_valuation AS
 SELECT
-  branch_code,
-  product_id,
-  qty,
-  qty * avg_cost AS valuation
-FROM inventory_stocks
+  ist.branch_id,
+  b.name AS branch_name,
+  ist.product_id,
+  p.name AS product_name,
+  ist.qty,
+  ist.avg_cost,
+  ist.qty * ist.avg_cost AS valuation
+FROM inventory_stocks ist
+JOIN branches b ON b.id = ist.branch_id
+JOIN products p ON p.id = ist.product_id
 WITH NO DATA;
 
-CREATE UNIQUE INDEX ON _mv_inventory_valuation (branch_code, product_id);
+CREATE UNIQUE INDEX ON _mv_inventory_valuation (branch_id, product_id);
+
+CREATE MATERIALIZED VIEW _mv_sales_by_category AS
+SELECT
+  s.branch_id,
+  b.name AS branch_name,
+  date_trunc('day', s.created_at) AS day,
+  p.category_id,
+  cat.name AS category_name,
+  sum(si.total) AS gross_total,
+  sum(si.total - si.qty * p.cost) AS gross_profit,
+  sum(si.qty) AS qty_sold
+FROM sales s
+JOIN branches b ON b.id = s.branch_id
+JOIN sale_items si ON si.sale_id = s.id
+JOIN products p ON p.id = si.product_id
+JOIN categories cat ON cat.id = p.category_id
+WHERE s.status = 'COMPLETED'
+GROUP BY s.branch_id, b.name, date_trunc('day', s.created_at), p.category_id, cat.name
+WITH NO DATA;
+
+CREATE UNIQUE INDEX ON _mv_sales_by_category (branch_id, day, category_id);
+
+CREATE MATERIALIZED VIEW _mv_cash_summary AS
+SELECT
+  cs.branch_id,
+  b.name AS branch_name,
+  date_trunc('day', cs.opened_at) AS day,
+  count(*) AS session_count,
+  sum(cs.opening_balance) AS total_opening,
+  coalesce(sum(cs.expected_balance), 0) AS total_expected,
+  coalesce(sum(cs.counted_balance), 0) AS total_counted,
+  coalesce(sum(cs.difference), 0) AS total_difference
+FROM cash_sessions cs
+JOIN branches b ON b.id = cs.branch_id
+WHERE cs.status = 'CLOSED'
+GROUP BY cs.branch_id, b.name, date_trunc('day', cs.opened_at)
+WITH NO DATA;
+
+CREATE UNIQUE INDEX ON _mv_cash_summary (branch_id, day);
 
 RESET search_path;

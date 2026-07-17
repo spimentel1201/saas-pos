@@ -22,18 +22,19 @@ import { TenantContextModule } from './shared/infrastructure/multi-tenant/tenant
 import { TenantGuard } from './shared/infrastructure/multi-tenant/tenant.guard.js';
 import { PrismaModule } from './shared/infrastructure/prisma/prisma.module.js';
 
-// Modulos de dominio (orden alfabetico) - solo los implementados en Sprint 1 se importan
-// Los modulos no implementados se comentan para que el build pase; se descomentan cuando se implementen.
+// Modulos de dominio (orden alfabetico)
 import { AuthModule } from './modules/auth/auth.module.js';
 import { BillingModule } from './modules/billing/billing.module.js';
 import { CashModule } from './modules/cash/cash.module.js';
 import { CatalogModule } from './modules/catalog/catalog.module.js';
+import { ConfigurationModule } from './modules/configuration/configuration.module.js';
+import { CustomersModule } from './modules/customers/customers.module.js';
 import { InventoryModule } from './modules/inventory/inventory.module.js';
 import { PurchasingModule } from './modules/purchasing/purchasing.module.js';
+import { ReportsModule } from './modules/reports/reports.module.js';
 import { SalesModule } from './modules/sales/sales.module.js';
 import { TenantsModule } from './modules/tenants/tenants.module.js';
-// import { CustomersModule } from './modules/customers/customers.module.js';
-// import { ReportsModule } from './modules/reports/reports.module.js';
+import { UsersModule } from './modules/users/users.module.js';
 // import { CodesModule } from './modules/codes/codes.module.js';
 // import { StorageModule } from './modules/storage/storage.module.js';
 // import { NotificationsModule } from './modules/notifications/notifications.module.js';
@@ -53,16 +54,19 @@ import { TenantsModule } from './modules/tenants/tenants.module.js';
     LoggerModule,
     TenantContextModule,
 
-    // ---- Dominio (Sprint 1: auth + tenants + billing) ----
+    // ---- Dominio ----
     AuthModule,
     TenantsModule,
     BillingModule,
     CatalogModule,
+    ConfigurationModule,
+    CustomersModule,
     InventoryModule,
     PurchasingModule,
+    ReportsModule,
     SalesModule,
     CashModule,
-    // CustomersModule, ReportsModule,
+    UsersModule,
     // CodesModule, StorageModule, NotificationsModule,
   ],
   providers: [
