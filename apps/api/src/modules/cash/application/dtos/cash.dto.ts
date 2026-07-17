@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsOptional, IsString, Min, Max, IsEnum, IsUUID } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IsEnum, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class OpenCashSessionDto {
   @ApiProperty({ example: 'BRANCH01' })
@@ -15,7 +15,7 @@ export class OpenCashSessionDto {
 }
 
 export class CloseCashSessionDto {
-  @ApiProperty({ example: 15450.50 })
+  @ApiProperty({ example: 15450.5 })
   @Type(() => Number)
   @IsNumber()
   @Min(0)

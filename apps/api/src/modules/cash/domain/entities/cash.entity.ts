@@ -51,17 +51,39 @@ export class CashSession {
     return new CashSession(props);
   }
 
-  get id(): number { return this.props.id; }
-  get branchCode(): string { return this.props.branchCode; }
-  get userId(): string { return this.props.userId; }
-  get openedAt(): Date { return this.props.openedAt; }
-  get closedAt(): Date | undefined { return this.props.closedAt; }
-  get openingBalance(): number { return this.props.openingBalance; }
-  get expectedBalance(): number { return this.props.expectedBalance; }
-  get countedBalance(): number | undefined { return this.props.countedBalance; }
-  get difference(): number | undefined { return this.props.difference; }
-  get status(): CashSessionStatus { return this.props.status; }
-  get notes(): string | undefined { return this.props.notes; }
+  get id(): number {
+    return this.props.id;
+  }
+  get branchCode(): string {
+    return this.props.branchCode;
+  }
+  get userId(): string {
+    return this.props.userId;
+  }
+  get openedAt(): Date {
+    return this.props.openedAt;
+  }
+  get closedAt(): Date | undefined {
+    return this.props.closedAt;
+  }
+  get openingBalance(): number {
+    return this.props.openingBalance;
+  }
+  get expectedBalance(): number {
+    return this.props.expectedBalance;
+  }
+  get countedBalance(): number | undefined {
+    return this.props.countedBalance;
+  }
+  get difference(): number | undefined {
+    return this.props.difference;
+  }
+  get status(): CashSessionStatus {
+    return this.props.status;
+  }
+  get notes(): string | undefined {
+    return this.props.notes;
+  }
 
   close(countedBalance: number, notes?: string): void {
     if (this.props.status !== 'OPEN') {
@@ -70,7 +92,8 @@ export class CashSession {
     if (countedBalance < 0) throw new Error('Conteo no puede ser negativo');
     this.props.closedAt = new Date();
     this.props.countedBalance = countedBalance;
-    this.props.difference = Math.round((countedBalance - this.props.expectedBalance) * 10000) / 10000;
+    this.props.difference =
+      Math.round((countedBalance - this.props.expectedBalance) * 10000) / 10000;
     this.props.status = 'CLOSED';
     this.props.notes = notes;
   }
@@ -130,12 +153,24 @@ export class CashMovement {
     return new CashMovement(props);
   }
 
-  get id(): number { return this.props.id; }
-  get sessionId(): number { return this.props.sessionId; }
-  get type(): CashMovementType { return this.props.type; }
-  get amount(): number { return this.props.amount; }
-  get reason(): string | undefined { return this.props.reason; }
-  get createdAt(): Date { return this.props.createdAt; }
+  get id(): number {
+    return this.props.id;
+  }
+  get sessionId(): number {
+    return this.props.sessionId;
+  }
+  get type(): CashMovementType {
+    return this.props.type;
+  }
+  get amount(): number {
+    return this.props.amount;
+  }
+  get reason(): string | undefined {
+    return this.props.reason;
+  }
+  get createdAt(): Date {
+    return this.props.createdAt;
+  }
 
   toDTO(): CashMovementDTO {
     return {

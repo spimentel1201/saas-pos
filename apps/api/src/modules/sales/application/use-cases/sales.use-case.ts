@@ -1,10 +1,16 @@
-import { Inject, Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { ulid } from 'ulid';
-import type { SaleRepositoryPort, CheckoutInput, ReturnInput, SaleFilter, PaginatedSales } from '../ports/sale.repository.port.js';
-import { Sale, SaleItem, SalePayment, SaleReturn, type PaymentMethod, type SaleStatus } from '../../domain/entities/sale.entity.js';
-import { computeSaleTotals, computeNumberSeq } from '../../domain/services/sale-calculator.service.js';
-import { SALE_REPO, TENANT_SCHEMA } from '../../sales.tokens.js';
 import { InventoryUseCases } from '../../../inventory/application/use-cases/inventory.use-case.js';
+import { type PaymentMethod, SaleItem } from '../../domain/entities/sale.entity.js';
+import { computeSaleTotals } from '../../domain/services/sale-calculator.service.js';
+import { SALE_REPO, TENANT_SCHEMA } from '../../sales.tokens.js';
+import type {
+  CheckoutInput,
+  PaginatedSales,
+  ReturnInput,
+  SaleFilter,
+  SaleRepositoryPort,
+} from '../ports/sale.repository.port.js';
 
 @Injectable()
 export class SalesUseCases {
@@ -14,38 +20,57 @@ export class SalesUseCases {
     private readonly inventory: InventoryUseCases,
   ) {}
 
-  async checkout(userId: string, dto: {
-    branchCode: string;
-    customerId?: string;
-    cashierSessionId?: number;
-    items: { productId: string; variantId?: string; qty: number; unitPrice: number; taxRate?: number; discount?: number }[];
-    payments: { method: PaymentMethod; amount: number; ref?: string }[];
-    meta?: Record<string, unknown>;
-  }) {
+  async checkout(
+    userId: string,
+    dto: {
+      branchCode: string;
+      customerId?: string;
+      cashierSessionId?: number;
+      items: {
+        productId: string;
+        variantId?: string;
+        qty: number;
+        unitPrice: number;
+        taxRate?: number;
+        discount?: number;
+      }[];
+      payments: { method: PaymentMethod; amount: number; ref?: string }[];
+      meta?: Record<string, unknown>;
+    },
+  ) {
     if (dto.items.length === 0) throw new BadRequestException('El carrito está vacío');
-    if (dto.payments.length === 0) throw new BadRequestException('Debe especificar al menos un método de pago');
+    if (dto.payments.length === 0)
+      throw new BadRequestException('Debe especificar al menos un método de pago');
 
     const totalPayments = dto.payments.reduce((s, p) => s + p.amount, 0);
-    const saleItems = dto.items.map(i => SaleItem.create({
-      productId: i.productId,
-      variantId: i.variantId,
-      qty: i.qty,
-      unitPrice: i.unitPrice,
-      taxRate: i.taxRate,
-      discount: i.discount,
-    }));
+    const saleItems = dto.items.map((i) =>
+      SaleItem.create({
+        productId: i.productId,
+        variantId: i.variantId,
+        qty: i.qty,
+        unitPrice: i.unitPrice,
+        taxRate: i.taxRate,
+        discount: i.discount,
+      }),
+    );
 
     const totals = computeSaleTotals(saleItems, 0);
     if (Math.abs(totalPayments - totals.total) > 0.01) {
-      throw new BadRequestException(`Total de pagos (${totalPayments}) no coincide con total de venta (${totals.total})`);
+      throw new BadRequestException(
+        `Total de pagos (${totalPayments}) no coincide con total de venta (${totals.total})`,
+      );
     }
 
     // Verificar stock disponible
     for (const item of saleItems) {
-      const stock = await this.inventory.getByBranchProduct(dto.branchCode, item.productId).catch(() => null);
+      const stock = await this.inventory
+        .getByBranchProduct(dto.branchCode, item.productId)
+        .catch(() => null);
       const available = stock?.available ?? 0;
       if (available < item.qty) {
-        throw new BadRequestException(`Stock insuficiente para ${item.productId}: disponible ${available}, solicitado ${item.qty}`);
+        throw new BadRequestException(
+          `Stock insuficiente para ${item.productId}: disponible ${available}, solicitado ${item.qty}`,
+        );
       }
     }
 
@@ -72,7 +97,7 @@ export class SalesUseCases {
     return sale.toDTO();
   }
 
-  async search(userId: string, filter: SaleFilter): Promise<PaginatedSales> {
+  async search(_userId: string, filter: SaleFilter): Promise<PaginatedSales> {
     return this.saleRepo.findAll(filter);
   }
 
@@ -84,23 +109,36 @@ export class SalesUseCases {
     return { id, status: 'VOID' };
   }
 
-  async createReturn(userId: string, dto: {
-    saleId: string;
-    reason?: string;
-    items: { productId: string; variantId?: string; qty: number; unitPrice: number; taxRate?: number; discount?: number }[];
-  }) {
+  async createReturn(
+    userId: string,
+    dto: {
+      saleId: string;
+      reason?: string;
+      items: {
+        productId: string;
+        variantId?: string;
+        qty: number;
+        unitPrice: number;
+        taxRate?: number;
+        discount?: number;
+      }[];
+    },
+  ) {
     const sale = await this.saleRepo.findById(dto.saleId);
     if (!sale) throw new NotFoundException('Venta no encontrada');
-    if (sale.status === 'VOID') throw new BadRequestException('La venta está anulada, no se puede devolver');
+    if (sale.status === 'VOID')
+      throw new BadRequestException('La venta está anulada, no se puede devolver');
 
-    const returnItems = dto.items.map(i => SaleItem.create({
-      productId: i.productId,
-      variantId: i.variantId,
-      qty: i.qty,
-      unitPrice: i.unitPrice,
-      taxRate: i.taxRate,
-      discount: i.discount,
-    }));
+    const returnItems = dto.items.map((i) =>
+      SaleItem.create({
+        productId: i.productId,
+        variantId: i.variantId,
+        qty: i.qty,
+        unitPrice: i.unitPrice,
+        taxRate: i.taxRate,
+        discount: i.discount,
+      }),
+    );
 
     // Sumar stock de vuelta
     for (const item of returnItems) {
@@ -135,6 +173,6 @@ export class SalesUseCases {
 
   async listReturns(saleId: string) {
     const returns = await this.saleRepo.listReturns(saleId);
-    return returns.map(r => r.toDTO());
+    return returns.map((r) => r.toDTO());
   }
 }

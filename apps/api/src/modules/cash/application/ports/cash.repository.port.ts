@@ -1,11 +1,21 @@
-import type { CashSession, CashMovement, CashSessionStatus, CashMovementType } from '../../domain/entities/cash.entity.js';
+import type {
+  CashMovement,
+  CashMovementType,
+  CashSession,
+  CashSessionStatus,
+} from '../../domain/entities/cash.entity.js';
 
 export interface CashSessionRepositoryPort {
   save(session: CashSession): Promise<CashSession>;
   findById(id: number): Promise<CashSession | null>;
   findOpenByBranch(branchCode: string): Promise<CashSession | null>;
   findAll(branchCode?: string, status?: CashSessionStatus): Promise<CashSession[]>;
-  addMovement(sessionId: number, type: CashMovementType, amount: number, reason?: string): Promise<CashMovement>;
+  addMovement(
+    sessionId: number,
+    type: CashMovementType,
+    amount: number,
+    reason?: string,
+  ): Promise<CashMovement>;
   listMovements(sessionId: number): Promise<CashMovement[]>;
   calculateExpectedBalance(sessionId: number): Promise<number>;
 }

@@ -47,13 +47,27 @@ export class SaleItem {
     return new SaleItem(props);
   }
 
-  get productId(): string { return this.props.productId; }
-  get variantId(): string | undefined { return this.props.variantId; }
-  get qty(): number { return this.props.qty; }
-  get unitPrice(): number { return this.props.unitPrice; }
-  get taxAmount(): number { return this.props.taxAmount; }
-  get discount(): number { return this.props.discount; }
-  get total(): number { return this.props.total; }
+  get productId(): string {
+    return this.props.productId;
+  }
+  get variantId(): string | undefined {
+    return this.props.variantId;
+  }
+  get qty(): number {
+    return this.props.qty;
+  }
+  get unitPrice(): number {
+    return this.props.unitPrice;
+  }
+  get taxAmount(): number {
+    return this.props.taxAmount;
+  }
+  get discount(): number {
+    return this.props.discount;
+  }
+  get total(): number {
+    return this.props.total;
+  }
 
   toDTO(): SaleItemDTO {
     return {
@@ -104,9 +118,15 @@ export class SalePayment {
     return new SalePayment(props);
   }
 
-  get method(): PaymentMethod { return this.props.method; }
-  get amount(): number { return this.props.amount; }
-  get ref(): string | undefined { return this.props.ref; }
+  get method(): PaymentMethod {
+    return this.props.method;
+  }
+  get amount(): number {
+    return this.props.amount;
+  }
+  get ref(): string | undefined {
+    return this.props.ref;
+  }
 
   toDTO(): SalePaymentDTO {
     return {
@@ -152,25 +172,55 @@ export class Sale {
     return new Sale(props);
   }
 
-  get id(): string { return this.props.id; }
-  get branchCode(): string { return this.props.branchCode; }
-  get userId(): string { return this.props.userId; }
-  get cashierSessionId(): number | undefined { return this.props.cashierSessionId; }
-  get numberSeq(): number { return this.props.numberSeq; }
-  get customerId(): string | undefined { return this.props.customerId; }
-  get subtotal(): number { return this.props.subtotal; }
-  get tax(): number { return this.props.tax; }
-  get discount(): number { return this.props.discount; }
-  get total(): number { return this.props.total; }
-  get status(): SaleStatus { return this.props.status; }
-  get meta(): Record<string, unknown> { return this.props.meta; }
-  get items(): SaleItem[] { return this.props.items; }
-  get payments(): SalePayment[] { return this.props.payments; }
-  get createdAt(): Date { return this.props.createdAt; }
+  get id(): string {
+    return this.props.id;
+  }
+  get branchCode(): string {
+    return this.props.branchCode;
+  }
+  get userId(): string {
+    return this.props.userId;
+  }
+  get cashierSessionId(): number | undefined {
+    return this.props.cashierSessionId;
+  }
+  get numberSeq(): number {
+    return this.props.numberSeq;
+  }
+  get customerId(): string | undefined {
+    return this.props.customerId;
+  }
+  get subtotal(): number {
+    return this.props.subtotal;
+  }
+  get tax(): number {
+    return this.props.tax;
+  }
+  get discount(): number {
+    return this.props.discount;
+  }
+  get total(): number {
+    return this.props.total;
+  }
+  get status(): SaleStatus {
+    return this.props.status;
+  }
+  get meta(): Record<string, unknown> {
+    return this.props.meta;
+  }
+  get items(): SaleItem[] {
+    return this.props.items;
+  }
+  get payments(): SalePayment[] {
+    return this.props.payments;
+  }
+  get createdAt(): Date {
+    return this.props.createdAt;
+  }
 
   get cashReceived(): number {
     return this.props.payments
-      .filter(p => p.method === 'CASH' || p.method === 'MIXED')
+      .filter((p) => p.method === 'CASH' || p.method === 'MIXED')
       .reduce((s, p) => s + p.amount, 0);
   }
 
@@ -215,8 +265,8 @@ export class Sale {
       total: this.props.total,
       status: this.props.status,
       meta: this.props.meta,
-      items: this.props.items.map(i => i.toDTO()),
-      payments: this.props.payments.map(p => p.toDTO()),
+      items: this.props.items.map((i) => i.toDTO()),
+      payments: this.props.payments.map((p) => p.toDTO()),
       cashReceived: this.cashReceived,
       createdAt: this.props.createdAt,
     };
@@ -279,19 +329,31 @@ export class SaleReturn {
     return new SaleReturn(props);
   }
 
-  get id(): string { return this.props.id; }
-  get saleId(): string { return this.props.saleId; }
-  get reason(): string | undefined { return this.props.reason; }
-  get items(): SaleItem[] { return this.props.items; }
-  get total(): number { return this.props.total; }
-  get createdAt(): Date { return this.props.createdAt; }
+  get id(): string {
+    return this.props.id;
+  }
+  get saleId(): string {
+    return this.props.saleId;
+  }
+  get reason(): string | undefined {
+    return this.props.reason;
+  }
+  get items(): SaleItem[] {
+    return this.props.items;
+  }
+  get total(): number {
+    return this.props.total;
+  }
+  get createdAt(): Date {
+    return this.props.createdAt;
+  }
 
   toDTO(): SaleReturnDTO {
     return {
       id: this.props.id,
       saleId: this.props.saleId,
       reason: this.props.reason,
-      items: this.props.items.map(i => i.toDTO()),
+      items: this.props.items.map((i) => i.toDTO()),
       total: this.props.total,
       createdAt: this.props.createdAt,
     };

@@ -1,13 +1,24 @@
 import {
-  Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, Query,
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { TenantRequired } from '../../../../shared/infrastructure/multi-tenant/tenant-required.decorator.js';
 import { CurrentUser } from '../../../../shared/infrastructure/http/current-user.decorator.js';
-import { CashUseCases } from '../../application/use-cases/cash.use-case.js';
+import { TenantRequired } from '../../../../shared/infrastructure/multi-tenant/tenant-required.decorator.js';
 import {
-  OpenCashSessionDto, CloseCashSessionDto, AddCashMovementDto, CashSessionQueryDto,
+  AddCashMovementDto,
+  CashSessionQueryDto,
+  CloseCashSessionDto,
+  OpenCashSessionDto,
 } from '../../application/dtos/cash.dto.js';
+import { CashUseCases } from '../../application/use-cases/cash.use-case.js';
 
 @ApiTags('cash')
 @ApiBearerAuth('access-token')
@@ -20,10 +31,7 @@ export class CashController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Abrir sesión de caja' })
   @ApiBody({ type: OpenCashSessionDto })
-  async open(
-    @CurrentUser() user: { sub: string },
-    @Body() dto: OpenCashSessionDto,
-  ) {
+  async open(@CurrentUser() user: { sub: string }, @Body() dto: OpenCashSessionDto) {
     return this.cashUseCases.openSession(user.sub, dto);
   }
 
@@ -65,9 +73,7 @@ export class CashController {
   @ApiQuery({ name: 'status', required: false, enum: ['OPEN', 'CLOSED', 'RECONCILING'] })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
-  async list(
-    @Query() query: CashSessionQueryDto,
-  ) {
+  async list(@Query() query: CashSessionQueryDto) {
     const sessions = await this.cashUseCases.listSessions(query.branchCode, query.status);
     return {
       data: sessions,

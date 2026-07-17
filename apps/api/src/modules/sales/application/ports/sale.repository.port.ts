@@ -1,4 +1,11 @@
-import type { Sale, SaleDTO, SaleItem, SaleReturn, PaymentMethod, SaleStatus } from '../../domain/entities/sale.entity.js';
+import type {
+  PaymentMethod,
+  Sale,
+  SaleDTO,
+  SaleItem,
+  SaleReturn,
+  SaleStatus,
+} from '../../domain/entities/sale.entity.js';
 
 export interface SaleWithLines {
   sale: {

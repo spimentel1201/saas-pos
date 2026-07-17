@@ -1,6 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsOptional, IsString, Min, Max, IsArray, ValidateNested, IsEnum, IsUUID } from 'class-validator';
 import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 
 export class CheckoutItemDto {
   @ApiProperty()
@@ -18,7 +28,7 @@ export class CheckoutItemDto {
   @Min(0.0001)
   qty!: number;
 
-  @ApiProperty({ example: 12.50 })
+  @ApiProperty({ example: 12.5 })
   @Type(() => Number)
   @IsNumber()
   @Min(0)
@@ -45,7 +55,7 @@ export class CheckoutPaymentDto {
   @IsEnum(['CASH', 'CARD', 'TRANSFER', 'CREDIT', 'MIXED'])
   method!: 'CASH' | 'CARD' | 'TRANSFER' | 'CREDIT' | 'MIXED';
 
-  @ApiProperty({ example: 25.00 })
+  @ApiProperty({ example: 25.0 })
   @Type(() => Number)
   @IsNumber()
   @Min(0)
