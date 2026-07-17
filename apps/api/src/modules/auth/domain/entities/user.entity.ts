@@ -1,3 +1,5 @@
+export type Role = 'OWNER' | 'ADMIN' | 'MANAGER' | 'CASHIER';
+
 /**
  * Entidad de dominio User. NO depende de Prisma ni NestJS.
  * Representa al usuario global (multi-tenant) con sus invariantes.
