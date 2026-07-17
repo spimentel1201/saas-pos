@@ -41,7 +41,7 @@ describe('UserUseCases', () => {
       const result = await userUseCases.listTenantUsers(mockTenantId);
 
       expect(result).toHaveLength(1);
-      expect(result[0].role).toBe('ADMIN');
+      expect(result[0]?.role).toBe('ADMIN');
     });
   });
 
