@@ -1,6 +1,6 @@
-import pg from 'pg';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import pg from 'pg';
 
 const { Pool } = pg;
 const pool = new Pool({
@@ -18,12 +18,15 @@ async function createTenantSchemas() {
     console.log(`Creating schema ${schema}...`);
 
     // Check if already exists
-    const exists = await pool.query(`
+    const exists = await pool.query(
+      `
       SELECT EXISTS (
         SELECT 1 FROM information_schema.tables
         WHERE table_schema = $1 AND table_name = 'taxes'
       )
-    `, [schema]);
+    `,
+      [schema],
+    );
 
     if (exists.rows[0].exists) {
       console.log(`  ${schema}: already exists, skipping`);
