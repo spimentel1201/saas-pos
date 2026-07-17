@@ -1,6 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, IsNumber, Min, Max, IsBoolean, IsArray, ValidateNested, IsNumberString } from 'class-validator';
 import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class CreateProductDto {
   @ApiProperty({ example: 'Coca-Cola 500ml' })
@@ -328,10 +337,10 @@ export class ProductDTO {
   maxStock?: number;
 
   @ApiProperty()
-  variants!: any[];
+  variants!: Record<string, unknown>[];
 
   @ApiProperty()
-  images!: any[];
+  images!: Record<string, unknown>[];
 
   @ApiProperty()
   tags!: string[];

@@ -10,19 +10,17 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiBody,
-  ApiOperation,
-  ApiParam,
-  ApiQuery,
-  ApiTags,
-} from '@nestjs/swagger';
-import { TenantRequired } from '../../../../shared/infrastructure/multi-tenant/tenant-required.decorator.js';
-import { ProductUseCases } from '../../application/use-cases/product.use-case.js';
-import { CategoryUseCases } from '../../application/use-cases/category.use-case.js';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { CurrentTenant } from '../../../../shared/infrastructure/http/current-tenant.decorator.js';
-import { CreateProductDto, UpdateProductDto, CreateCategoryDto, UpdateCategoryDto } from '../../application/dtos/catalog.dto.js';
+import { TenantRequired } from '../../../../shared/infrastructure/multi-tenant/tenant-required.decorator.js';
+import {
+  CreateCategoryDto,
+  CreateProductDto,
+  UpdateCategoryDto,
+  UpdateProductDto,
+} from '../../application/dtos/catalog.dto.js';
+import { CategoryUseCases } from '../../application/use-cases/category.use-case.js';
+import { ProductUseCases } from '../../application/use-cases/product.use-case.js';
 
 @ApiTags('catalog')
 @ApiBearerAuth('access-token')
@@ -39,10 +37,7 @@ export class CatalogController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Crear producto' })
   @ApiBody({ type: CreateProductDto })
-  async createProduct(
-    @CurrentTenant() tenant: { id: string },
-    @Body() dto: CreateProductDto,
-  ) {
+  async createProduct(@CurrentTenant() tenant: { id: string }, @Body() dto: CreateProductDto) {
     return this.productUseCases.create(tenant.id, 'system', dto);
   }
 
@@ -57,12 +52,14 @@ export class CatalogController {
   @ApiQuery({ name: 'lowStock', required: false, type: Boolean })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
-  @ApiQuery({ name: 'sortBy', required: false, enum: ['name', 'sku', 'price', 'createdAt', 'updatedAt'] })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    enum: ['name', 'sku', 'price', 'createdAt', 'updatedAt'],
+  })
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
-  async searchProducts(
-    @CurrentTenant() tenant: { id: string },
-    @Query() query: any,
-  ) {
+  // biome-ignore lint/suspicious/noExplicitAny: dynamic query params from Swagger
+  async searchProducts(@CurrentTenant() tenant: { id: string }, @Query() query: any) {
     return this.productUseCases.search(tenant.id, query);
   }
 
@@ -117,20 +114,19 @@ export class CatalogController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Crear categoría' })
   @ApiBody({ type: CreateCategoryDto })
-  async createCategory(
-    @CurrentTenant() tenant: { id: string },
-    @Body() dto: CreateCategoryDto,
-  ) {
+  async createCategory(@CurrentTenant() tenant: { id: string }, @Body() dto: CreateCategoryDto) {
     return this.categoryUseCases.create(tenant.id, dto);
   }
 
   @Get('categories')
   @ApiOperation({ summary: 'Listar categorías (árbol o planas)' })
-  @ApiQuery({ name: 'tree', required: false, type: Boolean, description: 'Devolver como árbol jerárquico' })
-  async getCategories(
-    @CurrentTenant() tenant: { id: string },
-    @Query('tree') tree?: string,
-  ) {
+  @ApiQuery({
+    name: 'tree',
+    required: false,
+    type: Boolean,
+    description: 'Devolver como árbol jerárquico',
+  })
+  async getCategories(@CurrentTenant() tenant: { id: string }, @Query('tree') tree?: string) {
     if (tree === 'true') {
       return this.categoryUseCases.getTree(tenant.id);
     }

@@ -1,5 +1,3 @@
-import { ulid } from 'ulid';
-
 export interface BarcodeData {
   productId: string;
   productName: string;

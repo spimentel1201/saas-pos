@@ -1,5 +1,4 @@
 import { ulid } from 'ulid';
-import { ProductNotFoundError, ProductSkuAlreadyExistsError, ProductBarcodeAlreadyExistsError } from '../errors/catalog-errors.js';
 
 export type ProductType = 'GOOD' | 'SERVICE' | 'BUNDLE';
 export type ProductStatus = 'DRAFT' | 'ACTIVE' | 'INACTIVE' | 'DISCONTINUED';
@@ -127,28 +126,72 @@ export class Product {
     return new Product(props);
   }
 
-  get id(): ProductId { return this.props.id; }
-  get tenantId(): string { return this.props.tenantId; }
-  get categoryId(): string | undefined { return this.props.categoryId; }
-  get name(): string { return this.props.name; }
-  get description(): string | undefined { return this.props.description; }
-  get sku(): string { return this.props.sku; }
-  get barcode(): string | undefined { return this.props.barcode; }
-  get type(): ProductType { return this.props.type; }
-  get status(): ProductStatus { return this.props.status; }
-  get price(): number { return this.props.price; }
-  get cost(): number { return this.props.cost; }
-  get taxRate(): number { return this.props.taxRate; }
-  get trackStock(): boolean { return this.props.trackStock; }
-  get stock(): number { return this.props.stock; }
-  get minStock(): number { return this.props.minStock; }
-  get maxStock(): number | undefined { return this.props.maxStock; }
-  get variants(): ProductVariant[] { return this.props.variants; }
-  get images(): ProductImage[] { return this.props.images; }
-  get tags(): string[] { return this.props.tags; }
-  get createdAt(): Date { return this.props.createdAt; }
-  get updatedAt(): Date { return this.props.updatedAt; }
-  get createdBy(): string { return this.props.createdBy; }
+  get id(): ProductId {
+    return this.props.id;
+  }
+  get tenantId(): string {
+    return this.props.tenantId;
+  }
+  get categoryId(): string | undefined {
+    return this.props.categoryId;
+  }
+  get name(): string {
+    return this.props.name;
+  }
+  get description(): string | undefined {
+    return this.props.description;
+  }
+  get sku(): string {
+    return this.props.sku;
+  }
+  get barcode(): string | undefined {
+    return this.props.barcode;
+  }
+  get type(): ProductType {
+    return this.props.type;
+  }
+  get status(): ProductStatus {
+    return this.props.status;
+  }
+  get price(): number {
+    return this.props.price;
+  }
+  get cost(): number {
+    return this.props.cost;
+  }
+  get taxRate(): number {
+    return this.props.taxRate;
+  }
+  get trackStock(): boolean {
+    return this.props.trackStock;
+  }
+  get stock(): number {
+    return this.props.stock;
+  }
+  get minStock(): number {
+    return this.props.minStock;
+  }
+  get maxStock(): number | undefined {
+    return this.props.maxStock;
+  }
+  get variants(): ProductVariant[] {
+    return this.props.variants;
+  }
+  get images(): ProductImage[] {
+    return this.props.images;
+  }
+  get tags(): string[] {
+    return this.props.tags;
+  }
+  get createdAt(): Date {
+    return this.props.createdAt;
+  }
+  get updatedAt(): Date {
+    return this.props.updatedAt;
+  }
+  get createdBy(): string {
+    return this.props.createdBy;
+  }
 
   get isLowStock(): boolean {
     return this.props.trackStock && this.props.stock <= this.props.minStock;
@@ -256,7 +299,7 @@ export class Product {
   }
 
   removeVariant(variantId: string): void {
-    const idx = this.props.variants.findIndex(v => v.id === variantId);
+    const idx = this.props.variants.findIndex((v) => v.id === variantId);
     if (idx === -1) throw new Error('Variante no encontrada');
     this.props.variants.splice(idx, 1);
     this.touch();
@@ -273,7 +316,7 @@ export class Product {
   }
 
   removeImage(publicId: string): void {
-    const idx = this.props.images.findIndex(i => i.publicId === publicId);
+    const idx = this.props.images.findIndex((i) => i.publicId === publicId);
     if (idx === -1) throw new Error('Imagen no encontrada');
     this.props.images.splice(idx, 1);
     const firstImage = this.props.images[0];

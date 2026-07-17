@@ -1,7 +1,29 @@
-import { Injectable, Inject, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
-import type { CategoryRepositoryPort } from '../ports/catalog.repository.port.js';
-import { Category } from '../../domain/entities/category.entity.js';
+import {
+  BadRequestException,
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CATEGORY_REPO, TENANT_SCHEMA } from '../../catalog.tokens.js';
+import { Category } from '../../domain/entities/category.entity.js';
+import type { CategoryDTO } from '../../domain/entities/category.entity.js';
+import type { CategoryRepositoryPort } from '../ports/catalog.repository.port.js';
+
+interface CreateCategoryInput {
+  name: string;
+  parentId?: string;
+  description?: string;
+  sortOrder?: number;
+}
+
+interface UpdateCategoryInput {
+  name?: string;
+  description?: string;
+  parentId?: string;
+  sortOrder?: number;
+  isActive?: boolean;
+}
 
 @Injectable()
 export class CategoryUseCases {
@@ -10,7 +32,7 @@ export class CategoryUseCases {
     @Inject(TENANT_SCHEMA) private readonly tenantSchema: string,
   ) {}
 
-  async create(tenantId: string, dto: any): Promise<any> {
+  async create(tenantId: string, dto: CreateCategoryInput): Promise<CategoryDTO> {
     const existing = await this.categoryRepo.findByName(dto.name, tenantId);
     if (existing) {
       throw new ConflictException('Categoría con ese nombre ya existe');
@@ -33,23 +55,26 @@ export class CategoryUseCases {
     return (await this.categoryRepo.save(category)).toDTO();
   }
 
-  async findById(id: string): Promise<any> {
+  async findById(id: string): Promise<CategoryDTO> {
     const category = await this.categoryRepo.findById(id);
     if (!category) throw new NotFoundException('Categoría no encontrada');
     return category.toDTO();
   }
 
   async findAll(tenantId: string, includeInactive = false) {
-    return (await this.categoryRepo.findAll(tenantId, includeInactive)).map(c => c.toDTO());
+    return (await this.categoryRepo.findAll(tenantId, includeInactive)).map((c) => c.toDTO());
   }
 
-  async getTree(tenantId: string): Promise<any[]> {
+  async getTree(tenantId: string): Promise<CategoryDTO[]> {
     const categories = await this.categoryRepo.findTree(tenantId);
-    const map = new Map(categories.map(c => [c.id.toString(), { ...c.toDTO(), children: [] as any[] }]));
-    const roots: any[] = [];
+    const map = new Map<string, CategoryDTO & { children: CategoryDTO[] }>(
+      categories.map((c) => [c.id.toString(), { ...c.toDTO(), children: [] }]),
+    );
+    const roots: CategoryDTO[] = [];
 
     for (const cat of categories) {
-      const node = map.get(cat.id.toString())!;
+      const node = map.get(cat.id.toString());
+      if (!node) continue;
       if (cat.parentId) {
         const parent = map.get(cat.parentId);
         if (parent) parent.children.push(node);
@@ -61,14 +86,14 @@ export class CategoryUseCases {
   }
 
   async getActive(tenantId: string) {
-    return (await this.categoryRepo.findActiveByTenant(tenantId)).map(c => c.toDTO());
+    return (await this.categoryRepo.findActiveByTenant(tenantId)).map((c) => c.toDTO());
   }
 
   async getChildren(parentId: string) {
-    return (await this.categoryRepo.findChildren(parentId)).map(c => c.toDTO());
+    return (await this.categoryRepo.findChildren(parentId)).map((c) => c.toDTO());
   }
 
-  async update(id: string, dto: any): Promise<any> {
+  async update(id: string, dto: UpdateCategoryInput): Promise<CategoryDTO> {
     const category = await this.categoryRepo.findById(id);
     if (!category) throw new NotFoundException('Categoría no encontrada');
 
@@ -99,7 +124,9 @@ export class CategoryUseCases {
 
     const hasChildren = await this.categoryRepo.hasChildren(id);
     if (hasChildren) {
-      throw new ConflictException('La categoría tiene subcategorías. Elimínelas o muévalas primero.');
+      throw new ConflictException(
+        'La categoría tiene subcategorías. Elimínelas o muévalas primero.',
+      );
     }
 
     await this.categoryRepo.delete(id);

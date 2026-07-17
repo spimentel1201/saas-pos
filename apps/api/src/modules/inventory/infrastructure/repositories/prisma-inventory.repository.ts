@@ -21,6 +21,7 @@ export class PrismaStockRepository implements StockRepositoryPort {
   ) {}
 
   async findByBranchProduct(branchCode: string, productId: string): Promise<Stock | null> {
+    // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries on tx client
     return this.tenantPrisma.withTenant(async (tx: any) => {
       const rows = await tx.$queryRawUnsafe(
         'SELECT id, branch_code, product_id, qty, reserved, min_qty, max_qty, avg_cost, version, updated_at FROM inventory_stocks WHERE branch_code = $1 AND product_id = $2',
@@ -32,27 +33,33 @@ export class PrismaStockRepository implements StockRepositoryPort {
   }
 
   async findByBranch(branchCode: string): Promise<Stock[]> {
+    // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries on tx client
     return this.tenantPrisma.withTenant(async (tx: any) => {
       const rows = await tx.$queryRawUnsafe(
         'SELECT id, branch_code, product_id, qty, reserved, min_qty, max_qty, avg_cost, version, updated_at FROM inventory_stocks WHERE branch_code = $1 ORDER BY product_id ASC',
         branchCode,
       );
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL row
       return rows.map((r: any) => this.mapToStock(r));
     });
   }
 
   async findByProduct(productId: string): Promise<Stock[]> {
+    // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries on tx client
     return this.tenantPrisma.withTenant(async (tx: any) => {
       const rows = await tx.$queryRawUnsafe(
         'SELECT id, branch_code, product_id, qty, reserved, min_qty, max_qty, avg_cost, version, updated_at FROM inventory_stocks WHERE product_id = $1 ORDER BY branch_code ASC',
         productId,
       );
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL row
       return rows.map((r: any) => this.mapToStock(r));
     });
   }
 
   async findLowStock(branchCode?: string): Promise<Stock[]> {
+    // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries on tx client
     return this.tenantPrisma.withTenant(async (tx: any) => {
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL rows
       const rows: any[] = branchCode
         ? await tx.$queryRawUnsafe(
             'SELECT id, branch_code, product_id, qty, reserved, min_qty, max_qty, avg_cost, version, updated_at FROM inventory_stocks WHERE branch_code = $1 AND qty <= min_qty ORDER BY product_id ASC',
@@ -61,12 +68,14 @@ export class PrismaStockRepository implements StockRepositoryPort {
         : await tx.$queryRawUnsafe(
             'SELECT id, branch_code, product_id, qty, reserved, min_qty, max_qty, avg_cost, version, updated_at FROM inventory_stocks WHERE qty <= min_qty ORDER BY branch_code, product_id ASC',
           );
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL row
       return rows.map((r: any) => this.mapToStock(r));
     });
   }
 
   async upsert(stock: Stock): Promise<Stock> {
     const dto = stock.toDTO();
+    // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries on tx client
     return this.tenantPrisma.withTenant(async (tx: any) => {
       if (dto.id > 0) {
         await tx.$executeRawUnsafe(
@@ -83,6 +92,7 @@ export class PrismaStockRepository implements StockRepositoryPort {
           dto.version - 1,
         );
       } else {
+        // biome-ignore lint/suspicious/noExplicitAny: raw SQL rows
         const inserted: any[] = await tx.$queryRawUnsafe(
           `INSERT INTO inventory_stocks (branch_code, product_id, qty, reserved, min_qty, max_qty, avg_cost, version, updated_at)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
@@ -109,12 +119,15 @@ export class PrismaStockRepository implements StockRepositoryPort {
   }
 
   async listMovements(stockId: number, limit = 100): Promise<Movement[]> {
+    // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries on tx client
     return this.tenantPrisma.withTenant(async (tx: any) => {
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL rows
       const rows: any[] = await tx.$queryRawUnsafe(
         'SELECT id, stock_id, type, delta, reason, ref, branch_code, user_id, created_at FROM inventory_movements WHERE stock_id = $1 ORDER BY created_at DESC LIMIT $2',
         stockId,
         limit,
       );
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL row
       return rows.map((r: any) => this.mapToMovement(r));
     });
   }
@@ -128,7 +141,9 @@ export class PrismaStockRepository implements StockRepositoryPort {
     branchCode: string;
     userId: string;
   }): Promise<Movement> {
+    // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries on tx client
     return this.tenantPrisma.withTenant(async (tx: any) => {
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL rows
       const rows: any[] = await tx.$queryRawUnsafe(
         `INSERT INTO inventory_movements (stock_id, type, delta, reason, ref, branch_code, user_id, created_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
@@ -145,6 +160,7 @@ export class PrismaStockRepository implements StockRepositoryPort {
     });
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: raw SQL row mapping
   private mapToStock(row: any): Stock {
     return Stock.rehydrate({
       id: Number(row.id),
@@ -160,6 +176,7 @@ export class PrismaStockRepository implements StockRepositoryPort {
     });
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: raw SQL row mapping
   private mapToMovement(row: any): Movement {
     return Movement.rehydrate({
       id: Number(row.id),
@@ -183,6 +200,7 @@ export class PrismaTransferRepository implements TransferRepositoryPort {
   ) {}
 
   async findById(id: string): Promise<StockTransfer | null> {
+    // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries on tx client
     return this.tenantPrisma.withTenant(async (tx: any) => {
       const rows = await tx.$queryRawUnsafe(
         'SELECT id, from_branch, to_branch, status, items, created_by, created_at, updated_at FROM stock_transfers WHERE id = $1',
@@ -193,7 +211,9 @@ export class PrismaTransferRepository implements TransferRepositoryPort {
   }
 
   async findAll(status?: string): Promise<StockTransfer[]> {
+    // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries on tx client
     return this.tenantPrisma.withTenant(async (tx: any) => {
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL rows
       const rows: any[] = status
         ? await tx.$queryRawUnsafe(
             'SELECT id, from_branch, to_branch, status, items, created_by, created_at, updated_at FROM stock_transfers WHERE status = $1 ORDER BY created_at DESC',
@@ -202,12 +222,14 @@ export class PrismaTransferRepository implements TransferRepositoryPort {
         : await tx.$queryRawUnsafe(
             'SELECT id, from_branch, to_branch, status, items, created_by, created_at, updated_at FROM stock_transfers ORDER BY created_at DESC',
           );
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL row
       return rows.map((r: any) => this.mapToTransfer(r));
     });
   }
 
   async save(transfer: StockTransfer): Promise<StockTransfer> {
     const dto = transfer.toDTO();
+    // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries on tx client
     return this.tenantPrisma.withTenant(async (tx: any) => {
       const existing = (await tx.$queryRawUnsafe(
         'SELECT id FROM stock_transfers WHERE id = $1',
@@ -238,6 +260,7 @@ export class PrismaTransferRepository implements TransferRepositoryPort {
     });
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: raw SQL row mapping
   private mapToTransfer(row: any): StockTransfer {
     const items: TransferItem[] = Array.isArray(row.items)
       ? row.items

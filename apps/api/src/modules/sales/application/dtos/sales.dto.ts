@@ -235,10 +235,10 @@ export class SaleDTO {
   meta!: Record<string, unknown>;
 
   @ApiProperty()
-  items!: any[];
+  items!: Record<string, unknown>[];
 
   @ApiProperty()
-  payments!: any[];
+  payments!: Record<string, unknown>[];
 
   @ApiProperty()
   cashReceived!: number;
@@ -258,7 +258,7 @@ export class ReturnDTO {
   reason?: string;
 
   @ApiProperty()
-  items!: any[];
+  items!: Record<string, unknown>[];
 
   @ApiProperty()
   total!: number;
