@@ -27,17 +27,17 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { BillingModule } from './modules/billing/billing.module.js';
 import { CashModule } from './modules/cash/cash.module.js';
 import { CatalogModule } from './modules/catalog/catalog.module.js';
+import { CodesModule } from './modules/codes/codes.module.js';
 import { ConfigurationModule } from './modules/configuration/configuration.module.js';
 import { CustomersModule } from './modules/customers/customers.module.js';
 import { InventoryModule } from './modules/inventory/inventory.module.js';
+import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { PurchasingModule } from './modules/purchasing/purchasing.module.js';
 import { ReportsModule } from './modules/reports/reports.module.js';
 import { SalesModule } from './modules/sales/sales.module.js';
+import { StorageModule } from './modules/storage/storage.module.js';
 import { TenantsModule } from './modules/tenants/tenants.module.js';
 import { UsersModule } from './modules/users/users.module.js';
-// import { CodesModule } from './modules/codes/codes.module.js';
-// import { StorageModule } from './modules/storage/storage.module.js';
-// import { NotificationsModule } from './modules/notifications/notifications.module.js';
 
 @Module({
   imports: [
@@ -67,7 +67,9 @@ import { UsersModule } from './modules/users/users.module.js';
     SalesModule,
     CashModule,
     UsersModule,
-    // CodesModule, StorageModule, NotificationsModule,
+    CodesModule,
+    StorageModule,
+    NotificationsModule,
   ],
   providers: [
     Reflector,

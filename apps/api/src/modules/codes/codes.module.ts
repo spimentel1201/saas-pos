@@ -1,17 +1,18 @@
 ﻿import { Module } from '@nestjs/common';
+import { CodeUseCases } from './application/use-cases/code.use-case.js';
+import { CODE_REPOSITORY } from './codes.tokens.js';
+import { CodeController } from './infrastructure/http/code.controller.js';
+import { BwipJsCodeRepository } from './infrastructure/repositories/bwipjs-code.repository.js';
 
-/**
- * CodesModule - modulo de dominio.
- *
- * Estructura DDD-lite (ver PLAN-MVP-POS-SAAS.md seccion 4.2):
- *   domain/         entidades, value objects, reglas puras
- *   application/    casos de uso, servicios, DTOs
- *   infrastructure/ controllers, repos Prisma, eventos, adaptadores
- */
 @Module({
-  imports: [],
-  controllers: [],
-  providers: [],
-  exports: [],
+  controllers: [CodeController],
+  providers: [
+    CodeUseCases,
+    {
+      provide: CODE_REPOSITORY,
+      useClass: BwipJsCodeRepository,
+    },
+  ],
+  exports: [CodeUseCases],
 })
 export class CodesModule {}
