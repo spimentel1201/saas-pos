@@ -241,7 +241,8 @@ export class PrismaSaleRepository implements SaleRepositoryPort {
       if (filter.to) { conditions.push(`created_at <= $${idx++}`); params.push(filter.to); }
 
       const where = conditions.join(' AND ');
-      const sortBy = filter.sortBy ?? 'createdAt';
+      const sortMap: Record<string, string> = { createdAt: 'created_at', total: 'total' };
+      const sortBy = sortMap[filter.sortBy ?? 'createdAt'] ?? 'created_at';
       const sortOrder = filter.sortOrder ?? 'desc';
 
       const countRows = await tx.$queryRawUnsafe(
