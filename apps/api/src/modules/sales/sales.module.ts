@@ -1,17 +1,19 @@
 ﻿import { Module } from '@nestjs/common';
+import { SalesController } from './infrastructure/http/sales.controller.js';
+import { SalesUseCases } from './application/use-cases/sales.use-case.js';
+import { PrismaSaleRepository } from './infrastructure/repositories/prisma-sale.repository.js';
+import { SALE_REPO, TENANT_SCHEMA } from './sales.tokens.js';
+import { TenantContextModule } from '../../shared/infrastructure/multi-tenant/tenant-context.module.js';
+import { InventoryModule } from '../inventory/inventory.module.js';
 
-/**
- * SalesModule - modulo de dominio.
- *
- * Estructura DDD-lite (ver PLAN-MVP-POS-SAAS.md seccion 4.2):
- *   domain/         entidades, value objects, reglas puras
- *   application/    casos de uso, servicios, DTOs
- *   infrastructure/ controllers, repos Prisma, eventos, adaptadores
- */
 @Module({
-  imports: [],
-  controllers: [],
-  providers: [],
-  exports: [],
+  imports: [TenantContextModule, InventoryModule],
+  controllers: [SalesController],
+  providers: [
+    SalesUseCases,
+    { provide: SALE_REPO, useClass: PrismaSaleRepository },
+    { provide: TENANT_SCHEMA, useFactory: () => '', inject: [] },
+  ],
+  exports: [SalesUseCases],
 })
 export class SalesModule {}
