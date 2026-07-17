@@ -1,9 +1,9 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { TenantPrismaService } from '../../../../shared/infrastructure/prisma/tenant-prisma.service.js';
 import { CategoryRepositoryPort } from '../../application/ports/catalog.repository.port.js';
+import { TENANT_SCHEMA } from '../../catalog.tokens.js';
 import { Category } from '../../domain/entities/category.entity.js';
 import { CategoryId } from '../../domain/entities/category.entity.js';
-import { CATEGORY_REPO, TENANT_SCHEMA } from '../../catalog.tokens.js';
 
 @Injectable()
 export class PrismaCategoryRepository implements CategoryRepositoryPort {
@@ -22,12 +22,16 @@ export class PrismaCategoryRepository implements CategoryRepositoryPort {
       if (existing.length > 0) {
         await tx.$executeRawUnsafe(
           'UPDATE categories SET name = $1, parent_id = $2 WHERE id = $3',
-          dto.name, dto.parentId ?? null, dto.id,
+          dto.name,
+          dto.parentId ?? null,
+          dto.id,
         );
       } else {
         await tx.$executeRawUnsafe(
           'INSERT INTO categories (id, parent_id, name, created_at) VALUES ($1, $2, $3, NOW())',
-          dto.id, dto.parentId ?? null, dto.name,
+          dto.id,
+          dto.parentId ?? null,
+          dto.name,
         );
       }
       return category;
@@ -36,6 +40,7 @@ export class PrismaCategoryRepository implements CategoryRepositoryPort {
 
   async findById(id: string): Promise<Category | null> {
     return this.tenantPrisma.withTenant(async (tx) => {
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       const rows = await tx.$queryRawUnsafe<any[]>(
         'SELECT id, parent_id, name, created_at FROM categories WHERE id = $1',
         id,
@@ -44,8 +49,9 @@ export class PrismaCategoryRepository implements CategoryRepositoryPort {
     });
   }
 
-  async findByName(name: string, tenantId: string): Promise<Category | null> {
+  async findByName(name: string, _tenantId: string): Promise<Category | null> {
     return this.tenantPrisma.withTenant(async (tx) => {
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       const rows = await tx.$queryRawUnsafe<any[]>(
         'SELECT id, parent_id, name, created_at FROM categories WHERE name = $1',
         name,
@@ -54,44 +60,54 @@ export class PrismaCategoryRepository implements CategoryRepositoryPort {
     });
   }
 
-  async findAll(tenantId: string, includeInactive = false): Promise<Category[]> {
+  async findAll(_tenantId: string, _includeInactive = false): Promise<Category[]> {
     return this.tenantPrisma.withTenant(async (tx) => {
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       const rows = await tx.$queryRawUnsafe<any[]>(
         'SELECT id, parent_id, name, created_at FROM categories ORDER BY name ASC',
       );
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       return rows.map((r: any) => this.toDomain(r));
     });
   }
 
-  async findByParent(parentId?: string, tenantId?: string): Promise<Category[]> {
+  async findByParent(parentId?: string, _tenantId?: string): Promise<Category[]> {
     return this.tenantPrisma.withTenant(async (tx) => {
-      const rows = parentId === undefined
-        ? await tx.$queryRawUnsafe<any[]>(
-            'SELECT id, parent_id, name, created_at FROM categories WHERE parent_id IS NULL',
-          )
-        : await tx.$queryRawUnsafe<any[]>(
-            'SELECT id, parent_id, name, created_at FROM categories WHERE parent_id = $1',
-            parentId,
-          );
+      const rows =
+        parentId === undefined
+          ? // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
+            await tx.$queryRawUnsafe<any[]>(
+              'SELECT id, parent_id, name, created_at FROM categories WHERE parent_id IS NULL',
+            )
+          : // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
+            await tx.$queryRawUnsafe<any[]>(
+              'SELECT id, parent_id, name, created_at FROM categories WHERE parent_id = $1',
+              parentId,
+            );
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       return rows.map((r: any) => this.toDomain(r));
     });
   }
 
   async findChildren(id: string): Promise<Category[]> {
     return this.tenantPrisma.withTenant(async (tx) => {
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       const rows = await tx.$queryRawUnsafe<any[]>(
         'SELECT id, parent_id, name, created_at FROM categories WHERE parent_id = $1',
         id,
       );
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       return rows.map((r: any) => this.toDomain(r));
     });
   }
 
-  async findTree(tenantId: string): Promise<Category[]> {
+  async findTree(_tenantId: string): Promise<Category[]> {
     return this.tenantPrisma.withTenant(async (tx) => {
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       const rows = await tx.$queryRawUnsafe<any[]>(
         'SELECT id, parent_id, name, created_at FROM categories ORDER BY name ASC',
       );
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       return rows.map((r: any) => this.toDomain(r));
     });
   }
@@ -116,6 +132,7 @@ export class PrismaCategoryRepository implements CategoryRepositoryPort {
     });
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
   private toDomain(row: any): Category {
     return Category.rehydrate({
       id: CategoryId.fromString(row.id),

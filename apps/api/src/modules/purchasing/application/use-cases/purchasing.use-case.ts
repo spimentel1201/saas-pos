@@ -4,6 +4,7 @@ import { InventoryUseCases } from '../../../inventory/application/use-cases/inve
 import { computeWeightedAvgCost } from '../../../inventory/domain/services/avg-cost.service.js';
 import {
   PurchaseOrder,
+  type PurchaseOrderDTO,
   type PurchaseOrderItem,
   Supplier,
 } from '../../domain/entities/purchasing.entity.js';
@@ -109,14 +110,14 @@ export class PurchasingUseCases {
     return pos.map((p) => p.toDTO());
   }
 
-  async sendPO(id: string): Promise<any> {
+  async sendPO(id: string): Promise<PurchaseOrderDTO> {
     const po = await this.requirePO(id);
     po.send();
     await this.poRepo.save(po);
     return po.toDTO();
   }
 
-  async cancelPO(id: string): Promise<any> {
+  async cancelPO(id: string): Promise<PurchaseOrderDTO> {
     const po = await this.requirePO(id);
     po.cancel();
     await this.poRepo.save(po);

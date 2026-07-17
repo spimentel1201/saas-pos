@@ -17,7 +17,8 @@ async function fixSchemas() {
 
   // Read template
   const fs = await import('node:fs');
-  const templatePath = 'C:\\Users\\CIST\\Documents\\Dev\\Open\\apps\\api\\prisma\\tenants\\template.sql';
+  const templatePath =
+    'C:\\Users\\CIST\\Documents\\Dev\\Open\\apps\\api\\prisma\\tenants\\template.sql';
   const template = fs.readFileSync(templatePath, 'utf8');
 
   for (const row of tenants.rows) {
@@ -25,26 +26,32 @@ async function fixSchemas() {
     console.log(`\nProcessing ${schema} (${row.name})...`);
 
     // Check if schema exists
-    const exists = await pool.query(`
+    const exists = await pool.query(
+      `
       SELECT 1 FROM pg_namespace WHERE nspname = $1
-    `, [schema]);
+    `,
+      [schema],
+    );
 
     if (exists.rows.length > 0) {
       // Schema exists, check if taxes table exists
-      const hasTaxes = await pool.query(`
+      const hasTaxes = await pool.query(
+        `
         SELECT EXISTS (
           SELECT 1 FROM information_schema.tables
           WHERE table_schema = $1 AND table_name = 'taxes'
         )
-      `, [schema]);
+      `,
+        [schema],
+      );
 
       if (hasTaxes.rows[0].exists) {
         console.log(`  ✓ ${schema} already has taxes table, skipping`);
         continue;
       }
-      console.log(`  Schema exists but taxes missing, recreating...`);
+      console.log('  Schema exists but taxes missing, recreating...');
     } else {
-      console.log(`  Schema doesn't exist, creating...`);
+      console.log("  Schema doesn't exist, creating...");
     }
 
     // Apply template

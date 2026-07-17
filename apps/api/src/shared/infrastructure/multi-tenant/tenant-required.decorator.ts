@@ -1,4 +1,4 @@
-import { applyDecorators, SetMetadata } from '@nestjs/common';
+import { SetMetadata, applyDecorators } from '@nestjs/common';
 import { ApiSecurity } from '@nestjs/swagger';
 
 export const TENANT_REQUIRED_KEY = 'tenant-required';
@@ -8,7 +8,4 @@ export const TENANT_REQUIRED_KEY = 'tenant-required';
  * en el contexto. Combina con TenantGuard y avisa a Swagger que envíe el header X-Tenant-Slug.
  */
 export const TenantRequired = () =>
-  applyDecorators(
-    SetMetadata(TENANT_REQUIRED_KEY, true),
-    ApiSecurity('tenant-slug')
-  );
+  applyDecorators(SetMetadata(TENANT_REQUIRED_KEY, true), ApiSecurity('tenant-slug'));

@@ -70,15 +70,33 @@ export class Category {
     return new Category(props);
   }
 
-  get id(): CategoryId { return this.props.id; }
-  get tenantId(): string { return this.props.tenantId; }
-  get parentId(): string | undefined { return this.props.parentId; }
-  get name(): string { return this.props.name; }
-  get description(): string | undefined { return this.props.description; }
-  get sortOrder(): number { return this.props.sortOrder; }
-  get isActive(): boolean { return this.props.isActive; }
-  get createdAt(): Date { return this.props.createdAt; }
-  get updatedAt(): Date { return this.props.updatedAt; }
+  get id(): CategoryId {
+    return this.props.id;
+  }
+  get tenantId(): string {
+    return this.props.tenantId;
+  }
+  get parentId(): string | undefined {
+    return this.props.parentId;
+  }
+  get name(): string {
+    return this.props.name;
+  }
+  get description(): string | undefined {
+    return this.props.description;
+  }
+  get sortOrder(): number {
+    return this.props.sortOrder;
+  }
+  get isActive(): boolean {
+    return this.props.isActive;
+  }
+  get createdAt(): Date {
+    return this.props.createdAt;
+  }
+  get updatedAt(): Date {
+    return this.props.updatedAt;
+  }
 
   updateName(name: string): void {
     this.props.name = name.trim();

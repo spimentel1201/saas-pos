@@ -20,6 +20,7 @@ export class PrismaSupplierRepository implements SupplierRepositoryPort {
   ) {}
 
   async findById(id: string): Promise<Supplier | null> {
+    // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries on tx client
     return this.tenantPrisma.withTenant(async (tx: any) => {
       const rows = (await tx.$queryRawUnsafe(
         'SELECT id, name, contact, tax_id, email, phone, created_at FROM suppliers WHERE id = $1',
@@ -38,6 +39,7 @@ export class PrismaSupplierRepository implements SupplierRepositoryPort {
   }
 
   async findAll(): Promise<Supplier[]> {
+    // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries on tx client
     return this.tenantPrisma.withTenant(async (tx: any) => {
       const rows = (await tx.$queryRawUnsafe(
         'SELECT id, name, contact, tax_id, email, phone, created_at FROM suppliers ORDER BY name ASC',
@@ -50,12 +52,14 @@ export class PrismaSupplierRepository implements SupplierRepositoryPort {
         phone: string | null;
         created_at: Date;
       }[];
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL row
       return rows.map((r: any) => this.mapToSupplier(r));
     });
   }
 
   async save(supplier: Supplier): Promise<Supplier> {
     const dto = supplier.toDTO();
+    // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries on tx client
     return this.tenantPrisma.withTenant(async (tx: any) => {
       const existing = (await tx.$queryRawUnsafe(
         'SELECT id FROM suppliers WHERE id = $1',
@@ -87,11 +91,13 @@ export class PrismaSupplierRepository implements SupplierRepositoryPort {
   }
 
   async delete(id: string): Promise<void> {
+    // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries on tx client
     return this.tenantPrisma.withTenant(async (tx: any) => {
       await tx.$executeRawUnsafe('DELETE FROM suppliers WHERE id = $1', id);
     });
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: raw SQL row mapping
   private mapToSupplier(row: any): Supplier {
     return Supplier.rehydrate({
       id: row.id,
@@ -113,6 +119,7 @@ export class PrismaPurchaseOrderRepository implements PurchaseOrderRepositoryPor
   ) {}
 
   async findById(id: string): Promise<PurchaseOrder | null> {
+    // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries on tx client
     return this.tenantPrisma.withTenant(async (tx: any) => {
       const rows = (await tx.$queryRawUnsafe(
         'SELECT id, branch_code, supplier_id, status, total, items, created_by, created_at, updated_at FROM purchase_orders WHERE id = $1',
@@ -123,7 +130,7 @@ export class PrismaPurchaseOrderRepository implements PurchaseOrderRepositoryPor
         supplier_id: string;
         status: string;
         total: number;
-        items: any;
+        items: string;
         created_by: string;
         created_at: Date;
         updated_at: Date;
@@ -133,6 +140,7 @@ export class PrismaPurchaseOrderRepository implements PurchaseOrderRepositoryPor
   }
 
   async findAll(status?: string): Promise<PurchaseOrder[]> {
+    // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries on tx client
     return this.tenantPrisma.withTenant(async (tx: any) => {
       const rows = status
         ? ((await tx.$queryRawUnsafe(
@@ -144,7 +152,7 @@ export class PrismaPurchaseOrderRepository implements PurchaseOrderRepositoryPor
             supplier_id: string;
             status: string;
             total: number;
-            items: any;
+            items: string;
             created_by: string;
             created_at: Date;
             updated_at: Date;
@@ -157,17 +165,19 @@ export class PrismaPurchaseOrderRepository implements PurchaseOrderRepositoryPor
             supplier_id: string;
             status: string;
             total: number;
-            items: any;
+            items: string;
             created_by: string;
             created_at: Date;
             updated_at: Date;
           }[]);
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL row
       return rows.map((r: any) => this.mapToPO(r));
     });
   }
 
   async save(po: PurchaseOrder): Promise<PurchaseOrder> {
     const dto = po.toDTO();
+    // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries on tx client
     return this.tenantPrisma.withTenant(async (tx: any) => {
       const existing = (await tx.$queryRawUnsafe(
         'SELECT id FROM purchase_orders WHERE id = $1',
@@ -201,11 +211,13 @@ export class PrismaPurchaseOrderRepository implements PurchaseOrderRepositoryPor
   }
 
   async listReceipts(poId: string): Promise<PurchaseReceipt[]> {
+    // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries on tx client
     return this.tenantPrisma.withTenant(async (tx: any) => {
       const rows = (await tx.$queryRawUnsafe(
         'SELECT id, po_id, received_at, received_by, items FROM purchase_receipts WHERE po_id = $1 ORDER BY received_at DESC',
         poId,
-      )) as { id: number; po_id: string; received_at: Date; received_by: string; items: any }[];
+      )) as { id: number; po_id: string; received_at: Date; received_by: string; items: string }[];
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL row
       return rows.map((r: any) => this.mapToReceipt(r));
     });
   }
@@ -215,6 +227,7 @@ export class PrismaPurchaseOrderRepository implements PurchaseOrderRepositoryPor
     receivedBy: string;
     items: PurchaseOrderItem[];
   }): Promise<PurchaseReceipt> {
+    // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries on tx client
     return this.tenantPrisma.withTenant(async (tx: any) => {
       const rows = (await tx.$queryRawUnsafe(
         `INSERT INTO purchase_receipts (po_id, received_at, received_by, items)
@@ -223,11 +236,12 @@ export class PrismaPurchaseOrderRepository implements PurchaseOrderRepositoryPor
         input.poId,
         input.receivedBy,
         JSON.stringify(input.items),
-      )) as { id: number; po_id: string; received_at: Date; received_by: string; items: any }[];
+      )) as { id: number; po_id: string; received_at: Date; received_by: string; items: string }[];
       return this.mapToReceipt(rows[0]);
     });
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: raw SQL row mapping
   private mapToPO(row: any): PurchaseOrder {
     const items: PurchaseOrderItem[] = Array.isArray(row.items)
       ? row.items
@@ -245,6 +259,7 @@ export class PrismaPurchaseOrderRepository implements PurchaseOrderRepositoryPor
     });
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: raw SQL row mapping
   private mapToReceipt(row: any): PurchaseReceipt {
     const items: PurchaseOrderItem[] = Array.isArray(row.items)
       ? row.items

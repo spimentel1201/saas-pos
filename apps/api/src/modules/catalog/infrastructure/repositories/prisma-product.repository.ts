@@ -1,10 +1,14 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { TenantContext } from '../../../../shared/infrastructure/multi-tenant/tenant-context.js';
 import { TenantPrismaService } from '../../../../shared/infrastructure/prisma/tenant-prisma.service.js';
-import { ProductRepositoryPort, ProductFilter, PaginatedResult } from '../../application/ports/catalog.repository.port.js';
+import {
+  PaginatedResult,
+  ProductFilter,
+  ProductRepositoryPort,
+} from '../../application/ports/catalog.repository.port.js';
+import { TENANT_SCHEMA } from '../../catalog.tokens.js';
 import { Product } from '../../domain/entities/product.entity.js';
 import { ProductId } from '../../domain/entities/product.entity.js';
-import { PRODUCT_REPO, TENANT_SCHEMA } from '../../catalog.tokens.js';
 
 @Injectable()
 export class PrismaProductRepository implements ProductRepositoryPort {
@@ -26,17 +30,36 @@ export class PrismaProductRepository implements ProductRepositoryPort {
            price = $6, cost = $7, type = $8, track_stock = $9, is_active = $10,
            image_public_id = $11, image_url = $12, updated_at = NOW()
            WHERE id = $13`,
-          dto.name, dto.description ?? null, dto.sku, dto.barcode ?? null, dto.categoryId ?? null,
-          dto.price, dto.cost, dto.type, dto.trackStock, dto.status === 'ACTIVE',
-          null, null, dto.id,
+          dto.name,
+          dto.description ?? null,
+          dto.sku,
+          dto.barcode ?? null,
+          dto.categoryId ?? null,
+          dto.price,
+          dto.cost,
+          dto.type,
+          dto.trackStock,
+          dto.status === 'ACTIVE',
+          null,
+          null,
+          dto.id,
         );
       } else {
         await tx.$executeRawUnsafe(
           `INSERT INTO products (id, sku, barcode, name, description, category_id,
            cost, price, type, track_stock, is_active, created_at, updated_at)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())`,
-          dto.id, dto.sku, dto.barcode ?? null, dto.name, dto.description ?? null, dto.categoryId ?? null,
-          dto.cost, dto.price, dto.type, dto.trackStock, dto.status === 'ACTIVE',
+          dto.id,
+          dto.sku,
+          dto.barcode ?? null,
+          dto.name,
+          dto.description ?? null,
+          dto.categoryId ?? null,
+          dto.cost,
+          dto.price,
+          dto.type,
+          dto.trackStock,
+          dto.status === 'ACTIVE',
         );
       }
       return product;
@@ -45,6 +68,7 @@ export class PrismaProductRepository implements ProductRepositoryPort {
 
   async findById(id: string): Promise<Product | null> {
     return this.tenantPrisma.withTenant(async (tx) => {
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       const rows = await tx.$queryRawUnsafe<any[]>(
         `SELECT id, sku, barcode, name, description, category_id, cost, price, type,
          track_stock, is_active, image_public_id, image_url, created_at, updated_at
@@ -57,6 +81,7 @@ export class PrismaProductRepository implements ProductRepositoryPort {
 
   async findBySku(sku: string): Promise<Product | null> {
     return this.tenantPrisma.withTenant(async (tx) => {
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       const rows = await tx.$queryRawUnsafe<any[]>(
         `SELECT id, sku, barcode, name, description, category_id, cost, price, type,
          track_stock, is_active, image_public_id, image_url, created_at, updated_at
@@ -69,6 +94,7 @@ export class PrismaProductRepository implements ProductRepositoryPort {
 
   async findByBarcode(barcode: string): Promise<Product | null> {
     return this.tenantPrisma.withTenant(async (tx) => {
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       const rows = await tx.$queryRawUnsafe<any[]>(
         `SELECT id, sku, barcode, name, description, category_id, cost, price, type,
          track_stock, is_active, image_public_id, image_url, created_at, updated_at
@@ -83,12 +109,14 @@ export class PrismaProductRepository implements ProductRepositoryPort {
     return this.tenantPrisma.withTenant(async (tx) => {
       if (ids.length === 0) return [];
       const placeholders = ids.map((_, i) => `$${i + 1}`).join(',');
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       const rows = await tx.$queryRawUnsafe<any[]>(
         `SELECT id, sku, barcode, name, description, category_id, cost, price, type,
          track_stock, is_active, image_public_id, image_url, created_at, updated_at
          FROM products WHERE id IN (${placeholders})`,
         ...ids,
       );
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       return rows.map((r: any) => this.mapToDomain(r));
     });
   }
@@ -96,11 +124,14 @@ export class PrismaProductRepository implements ProductRepositoryPort {
   async findAll(filter: ProductFilter): Promise<PaginatedResult<Product>> {
     return this.tenantPrisma.withTenant(async (tx) => {
       const conditions: string[] = [];
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       const params: any[] = [];
       let paramIdx = 1;
 
       if (filter.search) {
-        conditions.push(`(name ILIKE $${paramIdx} OR sku ILIKE $${paramIdx} OR barcode ILIKE $${paramIdx} OR description ILIKE $${paramIdx})`);
+        conditions.push(
+          `(name ILIKE $${paramIdx} OR sku ILIKE $${paramIdx} OR barcode ILIKE $${paramIdx} OR description ILIKE $${paramIdx})`,
+        );
         params.push(`%${filter.search}%`);
         paramIdx++;
       }
@@ -140,14 +171,18 @@ export class PrismaProductRepository implements ProductRepositoryPort {
       );
       const total = Number(countResult[0]?.count ?? 0);
 
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       const rows = await tx.$queryRawUnsafe<any[]>(
         `SELECT id, sku, barcode, name, description, category_id, cost, price, type,
          track_stock, is_active, image_public_id, image_url, created_at, updated_at
          FROM products ${where} ORDER BY "${sortBy}" ${sortOrder} LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`,
-        ...params, limit, offset,
+        ...params,
+        limit,
+        offset,
       );
 
       return {
+        // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
         data: rows.map((r: any) => this.mapToDomain(r)),
         total,
         page,
@@ -157,17 +192,22 @@ export class PrismaProductRepository implements ProductRepositoryPort {
     });
   }
 
-  async findByCategory(categoryId: string, filter?: Omit<ProductFilter, 'categoryId'>): Promise<PaginatedResult<Product>> {
+  async findByCategory(
+    categoryId: string,
+    filter?: Omit<ProductFilter, 'categoryId'>,
+  ): Promise<PaginatedResult<Product>> {
     return this.findAll({ ...filter, categoryId });
   }
 
-  async findLowStock(tenantId: string): Promise<Product[]> {
+  async findLowStock(_tenantId: string): Promise<Product[]> {
     return this.tenantPrisma.withTenant(async (tx) => {
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       const rows = await tx.$queryRawUnsafe<any[]>(
         `SELECT id, sku, barcode, name, description, category_id, cost, price, type,
          track_stock, is_active, image_public_id, image_url, created_at, updated_at
          FROM products WHERE track_stock = true`,
       );
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       return rows.map((r: any) => this.mapToDomain(r));
     });
   }
@@ -202,6 +242,7 @@ export class PrismaProductRepository implements ProductRepositoryPort {
     });
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
   private mapToDomain(row: any): Product {
     const tenantId = row.tenant_id || TenantContext.current?.id || this.tenantSchema || 'unknown';
     return Product.rehydrate({
@@ -222,7 +263,9 @@ export class PrismaProductRepository implements ProductRepositoryPort {
       minStock: 0,
       maxStock: undefined,
       variants: [],
-      images: row.image_url ? [{ publicId: row.image_public_id ?? '', url: row.image_url, isPrimary: true }] : [],
+      images: row.image_url
+        ? [{ publicId: row.image_public_id ?? '', url: row.image_url, isPrimary: true }]
+        : [],
       tags: [],
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),

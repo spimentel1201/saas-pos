@@ -1,5 +1,5 @@
-import { Product } from '../../domain/entities/product.entity.js';
 import { Category } from '../../domain/entities/category.entity.js';
+import { Product } from '../../domain/entities/product.entity.js';
 
 export interface ProductFilter {
   search?: string;
@@ -32,7 +32,10 @@ export interface ProductRepositoryPort {
   findByBarcode(barcode: string): Promise<Product | null>;
   findByIds(ids: string[]): Promise<Product[]>;
   findAll(filter: ProductFilter): Promise<PaginatedResult<Product>>;
-  findByCategory(categoryId: string, filter?: Omit<ProductFilter, 'categoryId'>): Promise<PaginatedResult<Product>>;
+  findByCategory(
+    categoryId: string,
+    filter?: Omit<ProductFilter, 'categoryId'>,
+  ): Promise<PaginatedResult<Product>>;
   findLowStock(tenantId: string): Promise<Product[]>;
   delete(id: string): Promise<void>;
   existsBySku(sku: string, excludeId?: string): Promise<boolean>;
