@@ -7,6 +7,7 @@ export interface CashSessionRepositoryPort {
   findAll(branchCode?: string, status?: CashSessionStatus): Promise<CashSession[]>;
   addMovement(sessionId: number, type: CashMovementType, amount: number, reason?: string): Promise<CashMovement>;
   listMovements(sessionId: number): Promise<CashMovement[]>;
+  calculateExpectedBalance(sessionId: number): Promise<number>;
 }
 
 export const CASH_SESSION_REPO = Symbol('CASH_SESSION_REPO');

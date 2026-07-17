@@ -115,6 +115,32 @@ export class PrismaCashSessionRepository implements CashSessionRepositoryPort {
     });
   }
 
+  async calculateExpectedBalance(sessionId: number): Promise<number> {
+    return this.tenantPrisma.withTenant(async (tx) => {
+      const sessionRows = await tx.$queryRawUnsafe<{ opening_balance: number }[]>(
+        `SELECT opening_balance FROM cash_sessions WHERE id = $1`,
+        sessionId,
+      );
+      if (sessionRows.length === 0 || !sessionRows[0]) return 0;
+      const opening = Number(sessionRows[0].opening_balance);
+
+      const agg = await tx.$queryRawUnsafe<{ type: string; sum: number }[]>(
+        `SELECT type, SUM(amount) as sum
+         FROM cash_movements WHERE session_id = $1
+         GROUP BY type`,
+        sessionId,
+      );
+
+      let result = opening;
+      for (const row of agg) {
+        const amt = Number(row.sum);
+        if (row.type === 'SALE' || row.type === 'IN') result += amt;
+        else if (row.type === 'OUT' || row.type === 'REFUND') result -= amt;
+      }
+      return Math.round(result * 10000) / 10000;
+    });
+  }
+
   private mapToSession(row: any): CashSession {
     return CashSession.rehydrate({
       id: Number(row.id),

@@ -33,12 +33,18 @@ export class CashUseCases {
   async getOpenSession(branchCode: string): Promise<any> {
     const session = await this.sessionRepo.findOpenByBranch(branchCode);
     if (!session) throw new NotFoundException('No hay sesión abierta en esta sucursal');
+    if (session.status === 'OPEN') {
+      session.setExpectedBalance(await this.sessionRepo.calculateExpectedBalance(session.id));
+    }
     return session.toDTO();
   }
 
   async getSessionById(id: number): Promise<any> {
     const session = await this.sessionRepo.findById(id);
     if (!session) throw new NotFoundException('Sesión no encontrada');
+    if (session.status === 'OPEN') {
+      session.setExpectedBalance(await this.sessionRepo.calculateExpectedBalance(id));
+    }
     return session.toDTO();
   }
 
@@ -60,13 +66,8 @@ export class CashUseCases {
       throw new BadRequestException(`La sesión está en estado ${session.status}`);
     }
 
-    // Calcular expected balance desde movimientos
-    const movements = await this.sessionRepo.listMovements(id);
-    const salesCash = movements.filter(m => m.type === 'SALE').reduce((s, m) => s + m.amount, 0);
-    const ins = movements.filter(m => m.type === 'IN').reduce((s, m) => s + m.amount, 0);
-    const outs = movements.filter(m => m.type === 'OUT').reduce((s, m) => s + m.amount, 0);
-    const refunds = movements.filter(m => m.type === 'REFUND').reduce((s, m) => s + m.amount, 0);
-    const expected = session.openingBalance + salesCash + ins + refunds - outs;
+    const expected = await this.sessionRepo.calculateExpectedBalance(id);
+    session.setExpectedBalance(expected);
 
     if (Math.abs(dto.countedBalance - expected) > 0.01) {
       // Diferencia, se marca RECONCILING
@@ -98,5 +99,26 @@ export class CashUseCases {
   async getMovements(id: number): Promise<any[]> {
     const movements = await this.sessionRepo.listMovements(id);
     return movements.map(m => m.toDTO());
+  }
+
+  async getArqueo(id: number): Promise<any> {
+    const session = await this.sessionRepo.findById(id);
+    if (!session) throw new NotFoundException('Sesión no encontrada');
+    const movements = await this.sessionRepo.listMovements(id);
+    const expected = await this.sessionRepo.calculateExpectedBalance(id);
+    return {
+      sessionId: id,
+      branchCode: session.branchCode,
+      status: session.status,
+      openingBalance: session.openingBalance,
+      expectedBalance: expected,
+      movements: movements.map(m => m.toDTO()),
+      summary: {
+        sales: movements.filter(m => m.type === 'SALE').reduce((s, m) => s + m.amount, 0),
+        ins: movements.filter(m => m.type === 'IN').reduce((s, m) => s + m.amount, 0),
+        outs: movements.filter(m => m.type === 'OUT').reduce((s, m) => s + m.amount, 0),
+        refunds: movements.filter(m => m.type === 'REFUND').reduce((s, m) => s + m.amount, 0),
+      },
+    };
   }
 }

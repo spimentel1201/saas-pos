@@ -85,6 +85,13 @@ export class CashController {
     return this.cashUseCases.getSessionById(Number(sessionId));
   }
 
+  @Get(':sessionId/arqueo')
+  @ApiOperation({ summary: 'Calcular arqueo en tiempo real (balance esperado)' })
+  @ApiParam({ name: 'sessionId', type: Number })
+  async getArqueo(@Param('sessionId') sessionId: string) {
+    return this.cashUseCases.getArqueo(Number(sessionId));
+  }
+
   @Get(':sessionId/movements')
   @ApiOperation({ summary: 'Listar movimientos de una sesión' })
   @ApiParam({ name: 'sessionId', type: Number })

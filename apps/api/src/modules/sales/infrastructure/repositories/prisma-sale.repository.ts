@@ -90,7 +90,7 @@ export class PrismaSaleRepository implements SaleRepositoryPort {
         }
       }
 
-      // 3. Insertar pagos + cash_movements si efectivo
+      // 3. Insertar pagos + cash_movements para TODOS los métodos
       for (const payment of input.payments) {
         await tx.$executeRawUnsafe(
           `INSERT INTO sale_payments (sale_id, method, amount, ref)
@@ -98,19 +98,17 @@ export class PrismaSaleRepository implements SaleRepositoryPort {
           input.saleId, payment.method, payment.amount, payment.ref ?? null,
         );
 
-        if (payment.method === 'CASH' || payment.method === 'MIXED') {
-          const cashAmount = payment.method === 'CASH' ? payment.amount : 0;
-          if (cashAmount > 0) {
-            await tx.$executeRawUnsafe(
-              `INSERT INTO cash_movements (session_id, type, amount, reason, created_at)
-               SELECT id, 'SALE', $1, $2, NOW()
-               FROM cash_sessions
-               WHERE branch_code = $1 AND status = 'OPEN'
-               ORDER BY opened_at DESC
-               LIMIT 1`,
-              cashAmount, `Venta ${input.saleId}`,
-            );
-          }
+        // Registrar movimiento de caja para CASH, CARD, TRANSFER y MIXED
+        if (payment.method !== 'CREDIT') {
+          await tx.$executeRawUnsafe(
+            `INSERT INTO cash_movements (session_id, type, amount, reason, created_at)
+             SELECT id, 'SALE', $1, $2, NOW()
+             FROM cash_sessions
+             WHERE branch_code = $3 AND status = 'OPEN'
+             ORDER BY opened_at DESC
+             LIMIT 1`,
+            payment.amount, `Venta ${input.saleId} (${payment.method})`, input.branchCode,
+          );
         }
       }
 
