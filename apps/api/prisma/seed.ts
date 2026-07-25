@@ -11,7 +11,13 @@
  *  - 5 categorías, 5 impuestos, 15 productos por tenant
  *  - 5 clientes por tenant
  *  - 3 proveedores por tenant
- *  - Sesiones de caja y ventas de ejemplo
+ *  - Inventario con stock por sucursal
+ *  - Órdenes de compra (DRAFT, SENT, RECEIVED)
+ *  - Transferencias entre sucursales
+ *  - Sesiones de caja (abiertas y cerradas)
+ *  - Ventas con múltiples items y pagos
+ *  - Devoluciones
+ *  - Movimientos de inventario
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -184,73 +190,201 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
       }
     }
 
-    // Purchase Orders (3 per tenant)
-    for (let i = 0; i < 3; i++) {
-      const poId = `po-${schemaName}-${i + 1}`;
+    // Purchase Orders (5 per tenant with different statuses)
+    const poStatuses = ['DRAFT', 'SENT', 'PARTIAL', 'RECEIVED', 'CANCELED'];
+    const poIds: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      const poId = `po-${schemaName}-${String(i + 1).padStart(3, '0')}`;
+      poIds.push(poId);
       const branchId = branchIds[i % branchIds.length].id;
+      const supplierIdx = i % SUPPLIERS.length;
       const items = [
-        { productId: productIds[i * 3], qty: 10, unitCost: PRODUCTS[i * 3].cost },
-        { productId: productIds[i * 3 + 1], qty: 20, unitCost: PRODUCTS[i * 3 + 1].cost },
+        { productId: productIds[i * 3 % productIds.length], qty: 10 + i * 5, unitCost: PRODUCTS[i * 3 % PRODUCTS.length].cost },
+        { productId: productIds[(i * 3 + 1) % productIds.length], qty: 5 + i * 2, unitCost: PRODUCTS[(i * 3 + 1) % PRODUCTS.length].cost },
       ];
       const total = items.reduce((sum, item) => sum + item.qty * item.unitCost, 0);
 
       await client.query(
-        `INSERT INTO purchase_orders (id, branch_id, supplier_id, status, total, items, created_by)
-         VALUES ($1, $2, $3, 'RECEIVED', $4, $5, 'seed')
+        `INSERT INTO purchase_orders (id, branch_id, supplier_id, status, total, items, created_by, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, 'seed-user', now() - interval '${5 - i} days')
          ON CONFLICT (id) DO NOTHING`,
-        [poId, branchId, SUPPLIERS[i].id, total, JSON.stringify(items)],
+        [poId, branchId, SUPPLIERS[supplierIdx].id, poStatuses[i], total, JSON.stringify(items)],
       );
+
+      // Create receipts for RECEIVED orders
+      if (poStatuses[i] === 'RECEIVED' || poStatuses[i] === 'PARTIAL') {
+        await client.query(
+          `INSERT INTO purchase_receipts (po_id, received_by, items)
+           VALUES ($1, 'seed-user', $2)`,
+          [poId, JSON.stringify(items.map(it => ({ ...it, receivedQty: it.qty * (poStatuses[i] === 'PARTIAL' ? 0.5 : 1) })))],
+        );
+      }
     }
 
-    // Cash Sessions (2 per tenant)
-    for (let i = 0; i < 2; i++) {
-      const branchId = branchIds[i].id;
-      const openingBalance = 500;
-      const salesInSession = 200 + i * 100;
-      const expectedBalance = openingBalance + salesInSession;
+    // Stock Transfers (2 per tenant)
+    if (branchIds.length >= 2) {
+      const transferStatuses = ['PENDING', 'RECEIVED'];
+      for (let i = 0; i < 2; i++) {
+        const transferId = `transfer-${schemaName}-${String(i + 1).padStart(3, '0')}`;
+        const fromBranch = branchIds[0].id;
+        const toBranch = branchIds[1].id;
+        const items = [
+          { productId: productIds[i * 2 % productIds.length], qty: 5 },
+          { productId: productIds[(i * 2 + 1) % productIds.length], qty: 3 },
+        ];
 
-      await client.query(
-        `INSERT INTO cash_sessions (branch_id, user_id, opening_balance, expected_balance, counted_balance, difference, status, closed_at)
-         VALUES ($1, 'seed-user', $2, $3, $3, 0, 'CLOSED', now())
-         RETURNING id`,
-        [branchId, openingBalance, expectedBalance],
-      );
+        await client.query(
+          `INSERT INTO stock_transfers (id, from_branch_id, to_branch_id, status, items, created_by, created_at)
+           VALUES ($1, $2, $3, $4, $5, 'seed-user', now() - interval '${2 - i} days')
+           ON CONFLICT (id) DO NOTHING`,
+          [transferId, fromBranch, toBranch, transferStatuses[i], JSON.stringify(items)],
+        );
+      }
     }
 
-    // Sales (5 per tenant)
-    for (let i = 0; i < 5; i++) {
-      const saleId = `sale-${schemaName}-${String(i + 1).padStart(3, '0')}`;
+    // Cash Sessions (3 per tenant: 2 closed, 1 open)
+    const cashSessionIds: bigint[] = [];
+    for (let i = 0; i < 3; i++) {
       const branchId = branchIds[i % branchIds.length].id;
-      const productId = productIds[i % productIds.length];
-      const product = PRODUCTS[i % PRODUCTS.length];
-      const qty = Math.floor(Math.random() * 5) + 1;
-      const subtotal = product.price * qty;
-      const taxAmount = product.tax === 'tax-igv' ? subtotal * 0.18 : 0;
-      const total = subtotal + taxAmount;
+      const openingBalance = 500 + i * 100;
+      const salesInSession = 300 + i * 150;
+      const expectedBalance = openingBalance + salesInSession;
+      const isOpen = i === 2; // Last one is open
+
+      const result = await client.query(
+        `INSERT INTO cash_sessions (branch_id, user_id, opening_balance, expected_balance, status, closed_at, opened_at)
+         VALUES ($1, 'seed-user', $2, $3, $4, ${isOpen ? 'NULL' : 'now()'}, now() - interval '${3 - i} hours')
+         RETURNING id`,
+        [branchId, openingBalance, expectedBalance, isOpen ? 'OPEN' : 'CLOSED'],
+      );
+      if (result.rows[0]) {
+        cashSessionIds.push(result.rows[0].id);
+      }
+
+      // Cash movements for closed sessions
+      if (!isOpen) {
+        const movements = [
+          { type: 'SALE', amount: salesInSession * 0.6, reason: 'Ventas en efectivo' },
+          { type: 'IN', amount: 200, reason: 'Fondo inicial adicional' },
+          { type: 'OUT', amount: 50, reason: 'Retiro para proveedor' },
+        ];
+        for (const m of movements) {
+          await client.query(
+            `INSERT INTO cash_movements (session_id, type, amount, reason)
+             VALUES ($1, $2, $3, $4)`,
+            [result.rows[0].id, m.type, m.amount, m.reason],
+          );
+        }
+      }
+    }
+
+    // Sales (10 per tenant with multiple items)
+    const paymentMethods = ['CASH', 'CARD', 'TRANSFER', 'CASH', 'CARD'];
+    const saleStatuses = ['COMPLETED', 'COMPLETED', 'COMPLETED', 'COMPLETED', 'VOID', 'COMPLETED', 'COMPLETED', 'RETURNED', 'COMPLETED', 'COMPLETED'];
+    const saleIds: string[] = [];
+    for (let i = 0; i < 10; i++) {
+      const saleId = `sale-${schemaName}-${String(i + 1).padStart(3, '0')}`;
+      saleIds.push(saleId);
+      const branchId = branchIds[i % branchIds.length].id;
+      const customerId = customerIds[i % customerIds.length];
+
+      // Multiple items per sale (1-3 items)
+      const numItems = (i % 3) + 1;
+      let subtotal = 0;
+      let taxTotal = 0;
+      const saleItems: Array<{ productId: string; qty: number; unitPrice: number; taxAmount: number; total: number }> = [];
+
+      for (let j = 0; j < numItems; j++) {
+        const productIdx = (i + j) % PRODUCTS.length;
+        const product = PRODUCTS[productIdx];
+        const productId = productIds[productIdx];
+        const qty = Math.floor(Math.random() * 3) + 1;
+        const itemSubtotal = product.price * qty;
+        const taxAmount = product.tax === 'tax-igv' ? itemSubtotal * 0.18 : 0;
+        const itemTotal = itemSubtotal + taxAmount;
+
+        subtotal += itemSubtotal;
+        taxTotal += taxAmount;
+
+        saleItems.push({
+          productId,
+          qty,
+          unitPrice: product.price,
+          taxAmount,
+          total: itemTotal,
+        });
+      }
+
+      const total = subtotal + taxTotal;
+      const saleDate = new Date();
+      saleDate.setDate(saleDate.getDate() - (10 - i));
 
       await client.query(
-        `INSERT INTO sales (id, branch_id, user_id, number_seq, customer_id, subtotal, tax, total, status)
-         VALUES ($1, $2, 'seed-user', $3, $4, $5, $6, $7, 'COMPLETED')
+        `INSERT INTO sales (id, branch_id, user_id, number_seq, customer_id, subtotal, tax, total, status, created_at)
+         VALUES ($1, $2, 'seed-user', $3, $4, $5, $6, $7, $8, $9)
          ON CONFLICT (id) DO NOTHING`,
-        [saleId, branchId, i + 1, customerIds[i % customerIds.length], subtotal, taxAmount, total],
+        [saleId, branchId, i + 1, customerId, subtotal, taxTotal, total, saleStatuses[i], saleDate.toISOString()],
       );
 
       // Sale items
-      await client.query(
-        `INSERT INTO sale_items (sale_id, product_id, qty, unit_price, tax_amount, total)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [saleId, productId, qty, product.price, taxAmount, total],
-      );
+      for (const item of saleItems) {
+        await client.query(
+          `INSERT INTO sale_items (sale_id, product_id, qty, unit_price, tax_amount, total)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [saleId, item.productId, item.qty, item.unitPrice, item.taxAmount, item.total],
+        );
+      }
 
       // Sale payments
+      const paymentMethod = paymentMethods[i % paymentMethods.length];
       await client.query(
         `INSERT INTO sale_payments (sale_id, method, amount)
-         VALUES ($1, 'CASH', $2)`,
-        [saleId, total],
+         VALUES ($1, $2, $3)`,
+        [saleId, paymentMethod, total],
       );
     }
 
+    // Returns (2 per tenant)
+    for (let i = 0; i < 2; i++) {
+      const returnId = `return-${schemaName}-${String(i + 1).padStart(3, '0')}`;
+      const saleId = saleIds[i * 4]; // Returns from every 4th sale
+      const returnItems = [
+        { productId: productIds[i * 2 % productIds.length], qty: 1, reason: 'Producto defectuoso' },
+      ];
+      const returnTotal = PRODUCTS[i * 2 % PRODUCTS.length].price;
+
+      await client.query(
+        `INSERT INTO returns (id, sale_id, reason, items, total, created_at)
+         VALUES ($1, $2, $3, $4, $5, now() - interval '${1 - i} days')
+         ON CONFLICT (id) DO NOTHING`,
+        [returnId, saleId, 'Devolución por calidad', JSON.stringify(returnItems), returnTotal],
+      );
+    }
+
+    // Inventory Movements (for each product in first branch)
+    if (branchIds.length > 0) {
+      const defaultBranchId = branchIds[0].id;
+      const movementTypes = ['PURCHASE', 'SALE', 'ADJUSTMENT'];
+      for (let i = 0; i < Math.min(productIds.length, 8); i++) {
+        const stockResult = await client.query(
+          `SELECT id FROM inventory_stocks WHERE branch_id = $1 AND product_id = $2`,
+          [defaultBranchId, productIds[i]],
+        );
+        if (stockResult.rows[0]) {
+          const stockId = stockResult.rows[0].id;
+          const delta = i % 3 === 0 ? 10 : i % 3 === 1 ? -5 : 2;
+          await client.query(
+            `INSERT INTO inventory_movements (stock_id, type, delta, reason, ref, branch_id, user_id)
+             VALUES ($1, $2, $3, $4, $5, $6, 'seed-user')`,
+            [stockId, movementTypes[i % 3], delta, `Ajuste seed #${i + 1}`, `REF-${i + 1}`, defaultBranchId],
+          );
+        }
+      }
+    }
+
     console.log(`✅ Tenant ${schemaName} poblado correctamente`);
+    console.log(`   📦 ${5} órdenes de compra, ${2} transferencias, ${3} sesiones de caja`);
+    console.log(`   💰 ${10} ventas, ${2} devoluciones, ${8} movimientos de inventario`);
   } finally {
     await client.end();
   }

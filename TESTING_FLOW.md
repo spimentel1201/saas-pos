@@ -403,12 +403,62 @@ El seed crea automáticamente:
 | Productos | 15 | ELEC-001 a DEPO-003 |
 | Clientes | 5 | Carlos Pérez, María García, etc. |
 | Proveedores | 3 | sup-distrib, sup-import, sup-local |
-| Ventas | 10 (5 por tenant) | sale-tenant_comercio_demo_1-001 etc. |
-| Sesiones de caja | 4 (2 por tenant) | Cerradas con arqueo |
+| Órdenes de compra | 10 (5 por tenant) | DRAFT, SENT, PARTIAL, RECEIVED, CANCELED |
+| Transferencias | 4 (2 por tenant) | PENDING, RECEIVED |
+| Sesiones de caja | 6 (3 por tenant) | 2 cerradas + 1 abierta por tenant |
+| Ventas | 20 (10 por tenant) | COMPLETED, VOID, RETURNED |
+| Devoluciones | 4 (2 por tenant) | Por calidad |
+| Movimientos inventario | 16 (8 por tenant) | PURCHASE, SALE, ADJUSTMENT |
 
 ---
 
-## 6. Troubleshooting
+## 6. Implicaciones del Seed
+
+### Datos Insertados
+
+El seed inserta datos en **dos niveles**:
+
+1. **Schema compartido (pos_saas)**:
+   - `Tenant`, `User`, `TenantUser`, `Branch`, `Subscription`, `UsageCounter`
+   - Estos datos se insertan via Prisma Client
+
+2. **Schema del tenant (tenant_*)**:
+   - `branches`, `categories`, `taxes`, `products`, `customers`, `suppliers`
+   - `inventory_stocks`, `inventory_movements`
+   - `purchase_orders`, `purchase_receipts`
+   - `stock_transfers`
+   - `cash_sessions`, `cash_movements`
+   - `sales`, `sale_items`, `sale_payments`, `returns`
+   - Estos datos se insertan via SQL raw (pg client)
+
+### Configuración Requerida
+
+**No se requiere configuración adicional** para usar el seed. El script:
+- Usa `DATABASE_URL` del `.env` para conectar a PostgreSQL
+- Crea schemas automáticamente usando `create-schema.ts`
+- Inserta datos de prueba realistas
+
+### Consideraciones Importantes
+
+1. **Idempotencia**: El seed verifica si el tenant ya existe antes de crearlo. Para re-seed completo, ejecuta primero `clean.ts`:
+   ```bash
+   npx tsx prisma/clean.ts
+   pnpm --filter @pos/api db:seed
+   ```
+
+2. **Schemas de tenants**: Cada tenant tiene su propio schema PostgreSQL. El seed crea schemas con nombres como `tenant_comercio_demo_1`.
+
+3. **Datos de prueba**: Los productos, clientes y ventas son datos ficticios para desarrollo. No usar en producción.
+
+4. **Relaciones**: El seed mantiene integridad referencial:
+   - Productos → Categorías, Impuestos
+   - Ventas → Clientes, Productos
+   - Órdenes de compra → Proveedores, Sucursales
+   - Movimientos → Stocks, Sucursales
+
+---
+
+## 7. Troubleshooting
 
 ### Errores Comunes
 
