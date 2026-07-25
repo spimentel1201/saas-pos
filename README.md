@@ -33,6 +33,7 @@ pnpm install
 cp .env.example .env
 pnpm docker:up        # Postgres + Redis + Mailhog
 pnpm --filter @pos/api prisma:migrate
+pnpm --filter @pos/api db:seed  # Poblar con datos de prueba (opcional)
 pnpm dev              # API :3000 + web :3001 simultáneo
 ```
 
@@ -46,8 +47,9 @@ pnpm lint             # Biome check
 pnpm test             # Vitest en todo el workspace
 pnpm test:e2e         # Playwright en apps/web
 pnpm db:migrate       # migraciones Prisma (base)
-pnpm db:seed          # seeders base
+pnpm db:seed          # seeders base ( datos de prueba)
 pnpm --filter @pos/api prisma:studio   # explorar DB
+pnpm --filter @pos/api db:seed         # seed completo (creates tenant schemas)
 ```
 
 ## Estructura
@@ -75,4 +77,17 @@ pnpm --filter @pos/api prisma:studio   # explorar DB
 
 ## Estado
 
-Pre-Sprint 0 — esqueleto de carpetas y configuración base completos. Lista para arrancar Sprint 1 (Foundation: multi-tenant + auth + onboarding).
+Sprint 6 en progreso — Backend funcional con:
+- ✅ Autenticación JWT + RBAC multi-tenant
+- ✅ Onboarding wizard (sucursal, impuesto, producto)
+- ✅ Billing/Stripe (checkout, portal, webhooks)
+- ✅ Catálogo completo (productos, variantes, categorías)
+- ✅ Inventarios (stock por sucursal, movimientos, transferencias)
+- ✅ Compras (proveedores, órdenes de compra)
+- ✅ Ventas/POS (checkout multi-pago, devoluciones)
+- ✅ Caja (apertura/cierre, arqueo, movimientos)
+- ✅ Reportes (dashboard KPIs, ventas diarias, inventario valorizado, Excel exports)
+- ✅ Notificaciones (email, SMS, push)
+- ✅ Storage (Cloudinary uploads)
+- ✅ Swagger docs en `/api/v1/docs`
+- ✅ Seed script para datos de prueba

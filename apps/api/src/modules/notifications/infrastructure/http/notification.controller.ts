@@ -1,15 +1,22 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentTenant } from '../../../../shared/infrastructure/http/current-tenant.decorator.js';
 import { TenantRequired } from '../../../../shared/infrastructure/multi-tenant/tenant-required.decorator.js';
 import { NotificationUseCases } from '../../application/use-cases/notification.use-case.js';
 import { NotificationType } from '../../domain/entities/notification.entity.js';
 
-@Controller('api/v1/notifications')
+@ApiTags('notifications')
+@ApiBearerAuth('access-token')
+@Controller('notifications')
 export class NotificationController {
   constructor(private readonly notificationUseCases: NotificationUseCases) {}
 
   @Post('email')
   @TenantRequired()
+  @HttpCode(201)
+  @ApiOperation({ summary: 'Enviar email transaccional' })
+  @ApiBody({ schema: { properties: { to: { type: 'string' }, subject: { type: 'string' }, html: { type: 'string' }, userId: { type: 'string' } } } })
+  @ApiResponse({ status: 201, description: 'Email enviado' })
   async sendEmail(
     @CurrentTenant() tenantId: string,
     @Body() body: {
@@ -30,6 +37,10 @@ export class NotificationController {
 
   @Post('sms')
   @TenantRequired()
+  @HttpCode(201)
+  @ApiOperation({ summary: 'Enviar SMS' })
+  @ApiBody({ schema: { properties: { to: { type: 'string' }, message: { type: 'string' }, userId: { type: 'string' } } } })
+  @ApiResponse({ status: 201, description: 'SMS enviado' })
   async sendSMS(
     @CurrentTenant() tenantId: string,
     @Body() body: {
@@ -48,6 +59,10 @@ export class NotificationController {
 
   @Post('push')
   @TenantRequired()
+  @HttpCode(201)
+  @ApiOperation({ summary: 'Enviar notificación push' })
+  @ApiBody({ schema: { properties: { userId: { type: 'string' }, title: { type: 'string' }, body: { type: 'string' }, data: { type: 'object' } } } })
+  @ApiResponse({ status: 201, description: 'Push notification enviada' })
   async sendPushNotification(
     @CurrentTenant() tenantId: string,
     @Body() body: {
@@ -68,6 +83,10 @@ export class NotificationController {
 
   @Get()
   @TenantRequired()
+  @ApiOperation({ summary: 'Obtener notificaciones del tenant' })
+  @ApiQuery({ name: 'userId', required: false })
+  @ApiQuery({ name: 'type', required: false, enum: NotificationType })
+  @ApiResponse({ status: 200, description: 'Lista de notificaciones' })
   async getNotifications(
     @CurrentTenant() tenantId: string,
     @Query('userId') userId?: string,
@@ -81,12 +100,18 @@ export class NotificationController {
 
   @Get(':id')
   @TenantRequired()
+  @ApiOperation({ summary: 'Obtener notificación por ID' })
+  @ApiResponse({ status: 200, description: 'Notificación encontrada' })
+  @ApiResponse({ status: 404, description: 'Notificación no encontrada' })
   async getNotification(@Param('id') id: string) {
     return this.notificationUseCases.getNotificationById(id);
   }
 
   @Patch(':id/read')
   @TenantRequired()
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Marcar notificación como leída' })
+  @ApiResponse({ status: 200, description: 'Notificación marcada como leída' })
   async markAsRead(@Param('id') id: string) {
     await this.notificationUseCases.markAsRead(id);
     return { success: true };
@@ -94,6 +119,10 @@ export class NotificationController {
 
   @Post('sale-confirmation')
   @TenantRequired()
+  @HttpCode(201)
+  @ApiOperation({ summary: 'Enviar confirmación de venta' })
+  @ApiBody({ schema: { properties: { userId: { type: 'string' }, saleId: { type: 'string' }, total: { type: 'number' } } } })
+  @ApiResponse({ status: 201, description: 'Confirmación enviada' })
   async sendSaleConfirmation(
     @CurrentTenant() tenantId: string,
     @Body() body: {
@@ -112,6 +141,10 @@ export class NotificationController {
 
   @Post('low-stock-alert')
   @TenantRequired()
+  @HttpCode(201)
+  @ApiOperation({ summary: 'Enviar alerta de stock bajo' })
+  @ApiBody({ schema: { properties: { productId: { type: 'string' }, productName: { type: 'string' }, currentStock: { type: 'number' }, minStock: { type: 'number' } } } })
+  @ApiResponse({ status: 201, description: 'Alerta enviada' })
   async sendLowStockAlert(
     @CurrentTenant() tenantId: string,
     @Body() body: {

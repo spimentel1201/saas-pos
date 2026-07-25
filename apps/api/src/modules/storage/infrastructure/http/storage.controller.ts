@@ -4,21 +4,30 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Post,
   Query,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentTenant } from '../../../../shared/infrastructure/http/current-tenant.decorator.js';
 import { TenantRequired } from '../../../../shared/infrastructure/multi-tenant/tenant-required.decorator.js';
 import { StorageUseCases } from '../../application/use-cases/storage.use-case.js';
 import { FileCategory } from '../../domain/entities/file.entity.js';
 
-@Controller('api/v1/storage')
+@ApiTags('storage')
+@ApiBearerAuth('access-token')
+@Controller('storage')
 export class StorageController {
   constructor(private readonly storageUseCases: StorageUseCases) {}
 
   @Post('upload')
   @TenantRequired()
+  @HttpCode(201)
+  @ApiOperation({ summary: 'Subir archivo' })
+  @ApiBody({ schema: { properties: { file: { type: 'object', properties: { buffer: { type: 'string' }, originalName: { type: 'string' }, mimeType: { type: 'string' } } }, category: { type: 'string', enum: Object.values(FileCategory) } } } })
+  @ApiResponse({ status: 201, description: 'Archivo subido' })
   async uploadFile(
     @CurrentTenant() tenantId: string,
     @Body() body: {
@@ -49,6 +58,11 @@ export class StorageController {
 
   @Post('upload/product/:productId')
   @TenantRequired()
+  @HttpCode(201)
+  @ApiOperation({ summary: 'Subir imagen de producto' })
+  @ApiParam({ name: 'productId', description: 'ID del producto' })
+  @ApiBody({ schema: { properties: { file: { type: 'object', properties: { buffer: { type: 'string' }, originalName: { type: 'string' }, mimeType: { type: 'string' } } } } } })
+  @ApiResponse({ status: 201, description: 'Imagen subida' })
   async uploadProductImage(
     @CurrentTenant() tenantId: string,
     @Param('productId') productId: string,
@@ -79,6 +93,11 @@ export class StorageController {
 
   @Post('upload/receipt/:saleId')
   @TenantRequired()
+  @HttpCode(201)
+  @ApiOperation({ summary: 'Subir recibo de venta' })
+  @ApiParam({ name: 'saleId', description: 'ID de la venta' })
+  @ApiBody({ schema: { properties: { file: { type: 'object', properties: { buffer: { type: 'string' }, originalName: { type: 'string' }, mimeType: { type: 'string' } } } } } })
+  @ApiResponse({ status: 201, description: 'Recibo subido' })
   async uploadReceipt(
     @CurrentTenant() tenantId: string,
     @Param('saleId') saleId: string,
@@ -109,6 +128,10 @@ export class StorageController {
 
   @Delete(':publicId')
   @TenantRequired()
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Eliminar archivo' })
+  @ApiParam({ name: 'publicId', description: 'ID público del archivo' })
+  @ApiResponse({ status: 200, description: 'Archivo eliminado' })
   async deleteFile(@Param('publicId') publicId: string) {
     await this.storageUseCases.deleteFile(decodeURIComponent(publicId));
     return { success: true };
@@ -116,6 +139,10 @@ export class StorageController {
 
   @Get('url/:publicId')
   @TenantRequired()
+  @ApiOperation({ summary: 'Obtener URL de archivo' })
+  @ApiParam({ name: 'publicId', description: 'ID público del archivo' })
+  @ApiQuery({ name: 'expiresIn', required: false, type: Number, description: 'Tiempo de expiración en segundos' })
+  @ApiResponse({ status: 200, description: 'URL del archivo' })
   async getFileUrl(@Param('publicId') publicId: string, @Query('expiresIn') expiresIn?: string) {
     const url = await this.storageUseCases.getFileUrl(
       decodeURIComponent(publicId),
@@ -127,6 +154,10 @@ export class StorageController {
 
   @Get('temporary/:publicId')
   @TenantRequired()
+  @ApiOperation({ summary: 'Obtener URL temporal de archivo' })
+  @ApiParam({ name: 'publicId', description: 'ID público del archivo' })
+  @ApiQuery({ name: 'expiresIn', required: false, type: Number, description: 'Tiempo de expiración en segundos' })
+  @ApiResponse({ status: 200, description: 'URL temporal del archivo' })
   async getTemporaryUrl(
     @Param('publicId') publicId: string,
     @Query('expiresIn') expiresIn?: string,

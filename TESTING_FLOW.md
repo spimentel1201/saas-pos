@@ -1,6 +1,36 @@
 # POS SaaS - Flujo de Pruebas y Endpoints
 
-Este documento describe el flujo operativo del sistema backend (API NestJS) y las acciones necesarias para probar la funcionalidad implementada: Autenticación, Onboarding Multi-Tenant y Facturación (Stripe).
+Este documento describe el flujo operativo del sistema backend (API NestJS) y las acciones necesarias para probar la funcionalidad implementada.
+
+## Pre-requisitos
+
+```bash
+# 1. Levantar servicios base
+pnpm docker:up
+
+# 2. Aplicar migraciones
+pnpm --filter @pos/api prisma:migrate
+
+# 3. Poblar base de datos con datos de prueba
+pnpm --filter @pos/api db:seed
+
+# 4. Iniciar API
+pnpm --filter @pos/api dev
+```
+
+## Credenciales de Prueba (tras seed)
+
+| Usuario | Email | Password | Rol |
+|---------|-------|----------|-----|
+| Admin | admin@demo.com | Admin123! | OWNER |
+| Cajero | cajero@demo.com | Cajero123! | CASHIER |
+| Manager | manager@demo.com | Manager123! | MANAGER |
+
+**Tenants:**
+- Mi Comercio Demo: `comercio-demo-1`
+- Tienda Express: `comercio-demo-2`
+
+---
 
 ## Entorno de Pruebas Rápidas (Swagger)
 
@@ -191,3 +221,213 @@ sequenceDiagram
 3. **Webhook de Stripe (Interno)**
    - **Endpoint:** `POST /api/v1/billing/webhook`
    - **Acción:** Este endpoint recibe los eventos desde Stripe. En local, puedes probarlo usando el CLI de Stripe para redirigir los eventos (`stripe listen --forward-to localhost:3000/api/v1/billing/webhook`).
+
+---
+
+## 4. Flujo Completo de Prueba Manual (con Seed Data)
+
+Este flujo asume que ya ejecutaste `pnpm --filter @pos/api db:seed` y tienes datos de prueba en la base de datos.
+
+### Paso 1: Login y Obtener Token
+
+```bash
+# Login como admin
+curl -X POST http://localhost:3000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "admin@demo.com", "password": "Admin123!"}'
+```
+
+**Response:**
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
+  "user": { "id": "...", "email": "admin@demo.com", "name": "Admin Principal" },
+  "tenants": [{ "slug": "comercio-demo-1", "role": "OWNER", "name": "Mi Comercio Demo" }]
+}
+```
+
+### Paso 2: Configurar Headers en Swagger
+
+1. Abre `http://localhost:3000/api/v1/docs`
+2. Haz clic en "Authorize" (botón verde)
+3. En "access-token" pega: `Bearer eyJhbGciOiJIUzI1NiIs...`
+4. En "tenant-slug" pega: `comercio-demo-1`
+
+### Paso 3: Probar Endpoints de Tenants
+
+```bash
+# Ver perfil del tenant
+curl -X GET http://localhost:3000/api/v1/tenants/me \
+  -H "Authorization: Bearer <token>" \
+  -H "X-Tenant-Slug: comercio-demo-1"
+
+# Ver sucursales
+curl -X GET http://localhost:3000/api/v1/tenants/branches \
+  -H "Authorization: Bearer <token>" \
+  -H "X-Tenant-Slug: comercio-demo-1"
+
+# Ver uso del tenant
+curl -X GET http://localhost:3000/api/v1/tenants/usage \
+  -H "Authorization: Bearer <token>" \
+  -H "X-Tenant-Slug: comercio-demo-1"
+```
+
+### Paso 4: Probar Catálogo
+
+```bash
+# Listar productos
+curl -X GET "http://localhost:3000/api/v1/catalog/products?limit=10" \
+  -H "Authorization: Bearer <token>" \
+  -H "X-Tenant-Slug: comercio-demo-1"
+
+# Obtener producto por SKU
+curl -X GET http://localhost:3000/api/v1/catalog/products/sku/ELEC-001 \
+  -H "Authorization: Bearer <token>" \
+  -H "X-Tenant-Slug: comercio-demo-1"
+
+# Listar categorías
+curl -X GET http://localhost:3000/api/v1/catalog/categories \
+  -H "Authorization: Bearer <token>" \
+  -H "X-Tenant-Slug: comercio-demo-1"
+```
+
+### Paso 5: Probar Clientes
+
+```bash
+# Listar clientes
+curl -X GET "http://localhost:3000/api/v1/customers?limit=10" \
+  -H "Authorization: Bearer <token>" \
+  -H "X-Tenant-Slug: comercio-demo-1"
+
+# Búsqueda rápida para POS
+curl -X GET "http://localhost:3000/api/v1/customers/quick-search?q=12345678" \
+  -H "Authorization: Bearer <token>" \
+  -H "X-Tenant-Slug: comercio-demo-1"
+```
+
+### Paso 6: Probar Inventarios
+
+```bash
+# Listar stock por sucursal
+curl -X GET "http://localhost:3000/api/v1/inventory/stocks?branchId=<branch-id>" \
+  -H "Authorization: Bearer <token>" \
+  -H "X-Tenant-Slug: comercio-demo-1"
+
+# Productos con stock bajo
+curl -X GET http://localhost:3000/api/v1/inventory/low-stock \
+  -H "Authorization: Bearer <token>" \
+  -H "X-Tenant-Slug: comercio-demo-1"
+```
+
+### Paso 7: Probar Ventas
+
+```bash
+# Listar ventas
+curl -X GET "http://localhost:3000/api/v1/sales?limit=10" \
+  -H "Authorization: Bearer <token>" \
+  -H "X-Tenant-Slug: comercio-demo-1"
+
+# Obtener venta por ID
+curl -X GET http://localhost:3000/api/v1/sales/<sale-id> \
+  -H "Authorization: Bearer <token>" \
+  -H "X-Tenant-Slug: comercio-demo-1"
+```
+
+### Paso 8: Probar Reportes
+
+```bash
+# Dashboard KPIs
+curl -X GET http://localhost:3000/api/v1/reports/dashboard \
+  -H "Authorization: Bearer <token>" \
+  -H "X-Tenant-Slug: comercio-demo-1"
+
+# Ventas diarias
+curl -X GET "http://localhost:3000/api/v1/reports/sales/daily?from=2024-01-01&to=2024-12-31" \
+  -H "Authorization: Bearer <token>" \
+  -H "X-Tenant-Slug: comercio-demo-1"
+
+# Inventario valorizado
+curl -X GET http://localhost:3000/api/v1/reports/inventory/valuation \
+  -H "Authorization: Bearer <token>" \
+  -H "X-Tenant-Slug: comercio-demo-1"
+
+# Exportar a Excel
+curl -X GET "http://localhost:3000/api/v1/reports/export/daily-sales" \
+  -H "Authorization: Bearer <token>" \
+  -H "X-Tenant-Slug: comercio-demo-1" \
+  --output reporte.xlsx
+```
+
+### Paso 9: Probar Caja
+
+```bash
+# Sesión de caja abierta
+curl -X GET http://localhost:3000/api/v1/cash/session/open \
+  -H "Authorization: Bearer <token>" \
+  -H "X-Tenant-Slug: comercio-demo-1"
+
+# Listar sesiones de caja
+curl -X GET "http://localhost:3000/api/v1/cash/sessions?limit=10" \
+  -H "Authorization: Bearer <token>" \
+  -H "X-Tenant-Slug: comercio-demo-1"
+```
+
+### Paso 10: Probar Configuración
+
+```bash
+# Obtener configuración del tenant
+curl -X GET http://localhost:3000/api/v1/configuration \
+  -H "Authorization: Bearer <token>" \
+  -H "X-Tenant-Slug: comercio-demo-1"
+
+# Listar impuestos
+curl -X GET http://localhost:3000/api/v1/configuration/taxes \
+  -H "Authorization: Bearer <token>" \
+  -H "X-Tenant-Slug: comercio-demo-1"
+```
+
+---
+
+## 5. Datos de Prueba (tras seed)
+
+El seed crea automáticamente:
+
+| Entidad | Cantidad | IDs/Valores |
+|---------|----------|-------------|
+| Tenants | 2 | `comercio-demo-1`, `comercio-demo-2` |
+| Usuarios | 6 (3 por tenant) | admin@demo.com, cajero@demo.com, manager@demo.com |
+| Sucursales | 6 (3 por tenant) | CEN01, NOR01, SUR01 |
+| Categorías | 5 | cat-electro, cat-ropa, cat-alimentos, cat-hogar, cat-deportes |
+| Impuestos | 5 | tax-igv (18%), tax-exento, tax-ivap (4%), etc. |
+| Productos | 15 | ELEC-001 a DEPO-003 |
+| Clientes | 5 | Carlos Pérez, María García, etc. |
+| Proveedores | 3 | sup-distrib, sup-import, sup-local |
+| Ventas | 10 (5 por tenant) | sale-tenant_comercio_demo_1-001 etc. |
+| Sesiones de caja | 4 (2 por tenant) | Cerradas con arqueo |
+
+---
+
+## 6. Troubleshooting
+
+### Errores Comunes
+
+| Error | Causa | Solución |
+|-------|-------|----------|
+| `401 Unauthorized` | Token expirado o inválido | Login de nuevo |
+| `404 Not Found` | Header `X-Tenant-Slug` falso o tenant no existe | Verificar slug con `GET /auth/me` |
+| `403 Forbidden` | Rol insuficiente | Usar usuario con rol OWNER/ADMIN |
+| `500 Internal Server Error` | DB no disponible | Verificar `docker ps` y estado de Postgres |
+
+### Verificar Estado de Servicios
+
+```bash
+# Verificar Docker
+docker ps
+
+# Verificar API
+curl http://localhost:3000/api/v1/docs
+
+# Verificar logs de API
+docker logs pos_postgres
+```

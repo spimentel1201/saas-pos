@@ -346,6 +346,24 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
     });
   }
 
+  async getActiveBranchesCount(): Promise<number> {
+    return this.tenantPrisma.withTenant(async (tx) => {
+      const rows = await tx.$queryRawUnsafe<{ count: number }[]>(
+        `SELECT count(*) as count FROM branches WHERE active = true`,
+      );
+      return Number(rows[0]?.count ?? 0);
+    });
+  }
+
+  async getActiveCustomersCount(): Promise<number> {
+    return this.tenantPrisma.withTenant(async (tx) => {
+      const rows = await tx.$queryRawUnsafe<{ count: number }[]>(
+        `SELECT count(*) as count FROM customers WHERE active = true`,
+      );
+      return Number(rows[0]?.count ?? 0);
+    });
+  }
+
   async refreshMaterializedView(viewName: string): Promise<void> {
     await this.tenantPrisma.withTenant(async (tx) => {
       await tx.$executeRawUnsafe(`REFRESH MATERIALIZED VIEW CONCURRENTLY ${viewName}`);

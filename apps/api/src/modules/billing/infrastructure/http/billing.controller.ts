@@ -5,12 +5,12 @@ import { Public } from '../../../../shared/infrastructure/http/public.decorator.
 import { TenantRequired } from '../../../../shared/infrastructure/multi-tenant/tenant-required.decorator.js';
 import { JwtAuthGuard } from '../../../auth/infrastructure/http/jwt-auth.guard.js';
 import { CheckoutDto } from '../../application/dtos/checkout.dto.js';
-import { BillingService } from '../../application/services/billing.service.js';
+import { BillingUseCases } from '../../application/use-cases/billing.use-case.js';
 
 @ApiTags('billing')
 @Controller('billing')
 export class BillingController {
-  constructor(private readonly billing: BillingService) {}
+  constructor(private readonly billing: BillingUseCases) {}
 
   @Post('checkout')
   @UseGuards(JwtAuthGuard)

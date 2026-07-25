@@ -3,7 +3,7 @@ import type { Response } from 'express';
 import { CodeUseCases } from '../../application/use-cases/code.use-case.js';
 import { CodeType } from '../../domain/entities/code.entity.js';
 
-@Controller('api/v1/codes')
+@Controller('codes')
 export class CodeController {
   constructor(private readonly codeUseCases: CodeUseCases) {}
 

@@ -13,7 +13,7 @@ import {
   TenantDto,
   UsageDto,
 } from '../../application/dtos/tenant-output.dto.js';
-import { OnboardingService } from '../../application/services/onboarding.service.js';
+import { OnboardingUseCases } from '../../application/use-cases/onboarding.use-case.js';
 
 @ApiTags('tenants')
 @ApiBearerAuth('access-token')
@@ -21,7 +21,7 @@ import { OnboardingService } from '../../application/services/onboarding.service
 @UseGuards(JwtAuthGuard)
 @TenantRequired()
 export class TenantsController {
-  constructor(private readonly service: OnboardingService) {}
+  constructor(private readonly service: OnboardingUseCases) {}
 
   @Get('me')
   @ApiOperation({ summary: 'Perfil del tenant activo (con estado de onboarding)' })
