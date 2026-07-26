@@ -15,7 +15,7 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN cd apps/api && npx -y prisma generate --schema=prisma/schema.prisma
+RUN cd apps/api && npx -y prisma@6 generate --schema=prisma/schema.prisma
 RUN cd apps/api && pnpm build
 
 FROM node:22-alpine AS runner
@@ -29,4 +29,4 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/package.json ./
 
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma migrate deploy --schema=./prisma/schema.prisma && node dist/main.js"]
+CMD ["sh", "-c", "npx -y prisma@6 migrate deploy --schema=./prisma/schema.prisma && node dist/main.js"]
