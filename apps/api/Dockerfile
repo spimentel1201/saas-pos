@@ -12,7 +12,7 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN cd apps/api && npx prisma generate --schema=./prisma/schema.prisma
+RUN cd apps/api && npx prisma generate --schema=prisma/schema.prisma
 RUN cd apps/api && pnpm build
 
 FROM node:22-alpine AS runner
