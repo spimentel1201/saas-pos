@@ -29,6 +29,8 @@ COPY --from=builder /app/apps/api/package.json ./package.json
 COPY --from=builder /app/apps/api/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/apps/api/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/apps/api/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/apps/api/start.sh ./start.sh
+RUN chmod +x ./start.sh
 
 EXPOSE 3000
-CMD ["node", "dist/main.js"]
+CMD ["./start.sh"]
