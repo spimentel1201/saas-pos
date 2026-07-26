@@ -19,7 +19,6 @@ RUN pnpm install --frozen-lockfile
 # Stage 3: Build
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY . .
 
 # Generate Prisma client
@@ -36,15 +35,11 @@ ENV NODE_ENV=production
 
 RUN apk add --no-cache libc6-compat openssl
 
-# Copy built files
+# Copy everything from builder
 COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/apps/api/prisma ./prisma
-COPY --from=builder /app/apps/api/node_modules ./node_modules
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/package.json ./
-
-# Copy Prisma client
-COPY --from=builder /app/apps/api/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/apps/api/node_modules/@prisma ./node_modules/@prisma
 
 EXPOSE 3000
 
