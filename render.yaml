@@ -1,0 +1,57 @@
+# ============================================
+# Render.com Blueprint — solo el API web service
+#
+# IMPORTANTE: PostgreSQL y Redis se crean
+# manualmente en Render Dashboard, luego se
+# pegan los URLs como variables de entorno.
+# ============================================
+
+services:
+  - type: web
+    name: pos-saas-api
+    runtime: docker
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /api/v1/docs
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: API_PORT
+        value: "3000"
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_TTL
+        value: 15m
+      - key: JWT_REFRESH_TTL
+        value: 7d
+      - key: TENANT_BASE_DOMAIN
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: FROM_EMAIL
+        sync: false
+      - key: SENTRY_DSN
+        sync: false

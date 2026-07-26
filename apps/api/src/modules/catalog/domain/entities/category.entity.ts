@@ -12,7 +12,7 @@ export class CategoryId {
   }
 
   static fromString(value: string): CategoryId {
-    if (!value || value.length !== 26) {
+    if (!value || value.trim().length === 0) {
       throw new Error(`CategoryId inválido: ${value}`);
     }
     return new CategoryId(value);

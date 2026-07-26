@@ -8,11 +8,14 @@ export class DashboardUseCases {
   constructor(@Inject(REPORTS_REPO) private readonly reportsRepo: ReportsRepositoryPort) {}
 
   async getKPIs(): Promise<DashboardKPIs> {
-    const [todaySales, todayTransactions, lowStockProducts] = await Promise.all([
-      this.reportsRepo.getTodaySalesTotal(),
-      this.reportsRepo.getTodayTransactionsCount(),
-      this.reportsRepo.getLowStockCount(),
-    ]);
+    const [todaySales, todayTransactions, lowStockProducts, activeBranches, activeCustomers] =
+      await Promise.all([
+        this.reportsRepo.getTodaySalesTotal(),
+        this.reportsRepo.getTodayTransactionsCount(),
+        this.reportsRepo.getLowStockCount(),
+        this.reportsRepo.getActiveBranchesCount(),
+        this.reportsRepo.getActiveCustomersCount(),
+      ]);
 
     return {
       todaySales,
@@ -20,8 +23,8 @@ export class DashboardUseCases {
       averageTicket:
         todayTransactions > 0 ? Math.round((todaySales / todayTransactions) * 100) / 100 : 0,
       lowStockProducts,
-      activeBranches: 0,
-      activeCustomers: 0,
+      activeBranches,
+      activeCustomers,
     };
   }
 

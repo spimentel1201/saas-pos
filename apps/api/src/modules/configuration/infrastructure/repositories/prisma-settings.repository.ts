@@ -76,10 +76,19 @@ export class PrismaSettingsRepository implements SettingsRepositoryPort {
 
   // biome-ignore lint/suspicious/noExplicitAny: raw SQL row mapping
   private mapToSetting(row: any): TenantSetting {
+    let parsedValue = row.value;
+    if (typeof row.value === 'string') {
+      try {
+        parsedValue = JSON.parse(row.value);
+      } catch {
+        // If JSON.parse fails, keep the raw string value
+        parsedValue = row.value;
+      }
+    }
     return TenantSetting.rehydrate({
       id: Number(row.id),
       key: row.key,
-      value: typeof row.value === 'string' ? JSON.parse(row.value) : row.value,
+      value: parsedValue,
       updatedAt: new Date(row.updated_at),
     });
   }

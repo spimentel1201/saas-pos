@@ -5,9 +5,9 @@
   "description": "Backend NestJS modular monolith para SaaS POS multi-tenant",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k -n tsc,api -c green,cyan \"tsc -w --preserveWatchOutput\" \"node --watch dist/main.js\"",
+    "dev": "tsc -p tsconfig.json && concurrently -k -n tsc,api -c green,cyan \"tsc -w --preserveWatchOutput\" \"node --watch dist/main.js\"",
     "build": "tsc -p tsconfig.json && node -e \"import('fs').then(fs => fs.cpSync('prisma/tenants', 'dist/prisma/tenants', { recursive: true }))\"",
-    "start": "node dist/main.js",
+    "start": "node --max-old-space-size=384 dist/main.js",
     "lint": "biome check src",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

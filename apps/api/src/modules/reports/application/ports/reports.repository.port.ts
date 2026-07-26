@@ -24,5 +24,7 @@ export interface ReportsRepositoryPort {
   getLowStockCount(): Promise<number>;
   getTodaySalesTotal(): Promise<number>;
   getTodayTransactionsCount(): Promise<number>;
+  getActiveBranchesCount(): Promise<number>;
+  getActiveCustomersCount(): Promise<number>;
   refreshMaterializedView(viewName: string): Promise<void>;
 }

@@ -1,6 +1,6 @@
-import { Controller, Get, Header, Param, Query, Res } from '@nestjs/common';
+import { Controller, Get, Param, Query, Res } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
-import type { Response } from 'express';
+import type { FastifyReply } from 'fastify';
 import { TenantRequired } from '../../../../shared/infrastructure/multi-tenant/tenant-required.decorator.js';
 import { CashReportUseCases } from '../../application/use-cases/cash-report.use-case.js';
 import { CategorySalesUseCases } from '../../application/use-cases/category-sales.use-case.js';
@@ -110,7 +110,6 @@ export class ReportsController {
   }
 
   @Get('export/:type')
-  @Header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   @ApiOperation({ summary: 'Exportar reporte a Excel' })
   @ApiParam({ name: 'type', enum: ['daily-sales', 'by-category', 'inventory', 'cash'] })
   @ApiQuery({ name: 'branchId', required: false })
@@ -121,7 +120,7 @@ export class ReportsController {
     @Query('branchId') branchId?: string,
     @Query('from') from?: string,
     @Query('to') to?: string,
-    @Res() res?: Response,
+    @Res({ passthrough: true }) res?: FastifyReply,
   ) {
     let workbook: import('exceljs').Workbook;
     let filename: string;
@@ -131,37 +130,36 @@ export class ReportsController {
     switch (type) {
       case 'daily-sales': {
         const data = await this.dailySalesUseCases.execute(filter);
-        workbook = dailySalesTemplate(data);
+        workbook = await dailySalesTemplate(data);
         filename = 'ventas-diarias.xlsx';
         break;
       }
       case 'by-category': {
         const data = await this.categorySalesUseCases.execute(filter);
-        workbook = categorySalesTemplate(data);
+        workbook = await categorySalesTemplate(data);
         filename = 'ventas-por-categoria.xlsx';
         break;
       }
       case 'inventory': {
         const data = await this.inventoryValuationUseCases.execute(branchId);
-        workbook = inventoryValuationTemplate(data);
+        workbook = await inventoryValuationTemplate(data);
         filename = 'inventario-valorizado.xlsx';
         break;
       }
       case 'cash': {
         const data = await this.cashReportUseCases.execute(filter);
-        workbook = cashReportTemplate(data);
+        workbook = await cashReportTemplate(data);
         filename = 'reporte-caja.xlsx';
         break;
       }
       default:
-        res?.status(400).json({ message: `Tipo de exportacion no soportado: ${type}` });
+        res?.code(400).send({ message: `Tipo de exportacion no soportado: ${type}` });
         return;
     }
 
-    res?.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    if (res) {
-      await workbook.xlsx.write(res);
-      res.end();
-    }
+    const buffer = await workbook.xlsx.writeBuffer();
+    res?.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res?.header('Content-Disposition', `attachment; filename="${filename}"`);
+    return buffer;
   }
 }

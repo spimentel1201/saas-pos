@@ -1,17 +1,18 @@
 ﻿import { Module } from '@nestjs/common';
+import { NotificationUseCases } from './application/use-cases/notification.use-case.js';
+import { NotificationController } from './infrastructure/http/notification.controller.js';
+import { InMemoryNotificationRepository } from './infrastructure/repositories/in-memory-notification.repository.js';
+import { NOTIFICATION_REPOSITORY } from './notifications.tokens.js';
 
-/**
- * NotificationsModule - modulo de dominio.
- *
- * Estructura DDD-lite (ver PLAN-MVP-POS-SAAS.md seccion 4.2):
- *   domain/         entidades, value objects, reglas puras
- *   application/    casos de uso, servicios, DTOs
- *   infrastructure/ controllers, repos Prisma, eventos, adaptadores
- */
 @Module({
-  imports: [],
-  controllers: [],
-  providers: [],
-  exports: [],
+  controllers: [NotificationController],
+  providers: [
+    NotificationUseCases,
+    {
+      provide: NOTIFICATION_REPOSITORY,
+      useClass: InMemoryNotificationRepository,
+    },
+  ],
+  exports: [NotificationUseCases],
 })
 export class NotificationsModule {}

@@ -1,17 +1,18 @@
 ﻿import { Module } from '@nestjs/common';
+import { StorageUseCases } from './application/use-cases/storage.use-case.js';
+import { StorageController } from './infrastructure/http/storage.controller.js';
+import { CloudinaryStorageRepository } from './infrastructure/repositories/cloudinary-storage.repository.js';
+import { STORAGE_REPOSITORY } from './storage.tokens.js';
 
-/**
- * StorageModule - modulo de dominio.
- *
- * Estructura DDD-lite (ver PLAN-MVP-POS-SAAS.md seccion 4.2):
- *   domain/         entidades, value objects, reglas puras
- *   application/    casos de uso, servicios, DTOs
- *   infrastructure/ controllers, repos Prisma, eventos, adaptadores
- */
 @Module({
-  imports: [],
-  controllers: [],
-  providers: [],
-  exports: [],
+  controllers: [StorageController],
+  providers: [
+    StorageUseCases,
+    {
+      provide: STORAGE_REPOSITORY,
+      useClass: CloudinaryStorageRepository,
+    },
+  ],
+  exports: [StorageUseCases],
 })
 export class StorageModule {}
