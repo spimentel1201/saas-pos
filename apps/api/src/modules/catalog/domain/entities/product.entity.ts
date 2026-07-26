@@ -55,7 +55,7 @@ export class ProductId {
   }
 
   static fromString(value: string): ProductId {
-    if (!value || value.length !== 26) {
+    if (!value || value.trim().length === 0) {
       throw new Error(`ProductId inválido: ${value}`);
     }
     return new ProductId(value);

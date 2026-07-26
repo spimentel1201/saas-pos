@@ -1,8 +1,10 @@
 import { BadRequestException, Controller, Get, Param, Query, Res } from '@nestjs/common';
-import type { Response } from 'express';
+import type { FastifyReply } from 'fastify';
+import { Public } from '../../../../shared/infrastructure/http/public.decorator.js';
 import { CodeUseCases } from '../../application/use-cases/code.use-case.js';
 import { CodeType } from '../../domain/entities/code.entity.js';
 
+@Public()
 @Controller('codes')
 export class CodeController {
   constructor(private readonly codeUseCases: CodeUseCases) {}
@@ -14,7 +16,7 @@ export class CodeController {
     @Query('width') width?: string,
     @Query('height') height?: string,
     @Query('includetext') includetext?: string,
-    @Res() res?: Response,
+    @Res({ passthrough: true }) res?: FastifyReply,
   ) {
     const codeType = type.toUpperCase() as CodeType;
 
@@ -32,12 +34,9 @@ export class CodeController {
       includetext: includetext === 'true',
     });
 
-    res?.set({
-      'Content-Type': result.mimeType,
-      'Cache-Control': 'public, max-age=86400',
-    });
-
-    res?.send(result.buffer);
+    res?.header('Content-Type', result.mimeType);
+    res?.header('Cache-Control', 'public, max-age=86400');
+    return result.buffer;
   }
 
   @Get('generate/barcode/:value')
@@ -47,7 +46,7 @@ export class CodeController {
     @Query('width') width?: string,
     @Query('height') height?: string,
     @Query('includetext') includetext?: string,
-    @Res() res?: Response,
+    @Res({ passthrough: true }) res?: FastifyReply,
   ) {
     const result = await this.codeUseCases.generateCode({
       type: type.toUpperCase() as CodeType,
@@ -57,31 +56,25 @@ export class CodeController {
       includetext: includetext === 'true',
     });
 
-    res?.set({
-      'Content-Type': result.mimeType,
-      'Cache-Control': 'public, max-age=86400',
-    });
-
-    res?.send(result.buffer);
+    res?.header('Content-Type', result.mimeType);
+    res?.header('Cache-Control', 'public, max-age=86400');
+    return result.buffer;
   }
 
   @Get('generate/qr/:value')
   async generateQR(
     @Param('value') value: string,
     @Query('size') size?: string,
-    @Res() res?: Response,
+    @Res({ passthrough: true }) res?: FastifyReply,
   ) {
     const result = await this.codeUseCases.generateQR(
       value,
       size ? Number.parseInt(size, 10) : undefined,
     );
 
-    res?.set({
-      'Content-Type': 'image/png',
-      'Cache-Control': 'public, max-age=86400',
-    });
-
-    res?.send(result.buffer);
+    res?.header('Content-Type', 'image/png');
+    res?.header('Cache-Control', 'public, max-age=86400');
+    return result.buffer;
   }
 
   @Get('types')

@@ -203,7 +203,7 @@ export class PrismaTransferRepository implements TransferRepositoryPort {
     // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries on tx client
     return this.tenantPrisma.withTenant(async (tx: any) => {
       const rows = await tx.$queryRawUnsafe(
-        'SELECT id, from_branch, to_branch, status, items, created_by, created_at, updated_at FROM stock_transfers WHERE id = $1',
+        'SELECT id, from_branch_code, to_branch_code, status, items, created_by, created_at, updated_at FROM stock_transfers WHERE id = $1',
         id,
       );
       return rows.length > 0 ? this.mapToTransfer(rows[0]) : null;
@@ -216,11 +216,11 @@ export class PrismaTransferRepository implements TransferRepositoryPort {
       // biome-ignore lint/suspicious/noExplicitAny: raw SQL rows
       const rows: any[] = status
         ? await tx.$queryRawUnsafe(
-            'SELECT id, from_branch, to_branch, status, items, created_by, created_at, updated_at FROM stock_transfers WHERE status = $1 ORDER BY created_at DESC',
+            'SELECT id, from_branch_code, to_branch_code, status, items, created_by, created_at, updated_at FROM stock_transfers WHERE status = $1 ORDER BY created_at DESC',
             status,
           )
         : await tx.$queryRawUnsafe(
-            'SELECT id, from_branch, to_branch, status, items, created_by, created_at, updated_at FROM stock_transfers ORDER BY created_at DESC',
+            'SELECT id, from_branch_code, to_branch_code, status, items, created_by, created_at, updated_at FROM stock_transfers ORDER BY created_at DESC',
           );
       // biome-ignore lint/suspicious/noExplicitAny: raw SQL row
       return rows.map((r: any) => this.mapToTransfer(r));
@@ -237,7 +237,7 @@ export class PrismaTransferRepository implements TransferRepositoryPort {
       )) as { id: string }[];
       if (existing.length > 0) {
         await tx.$executeRawUnsafe(
-          'UPDATE stock_transfers SET from_branch = $1, to_branch = $2, status = $3, items = $4, updated_at = NOW() WHERE id = $5',
+          'UPDATE stock_transfers SET from_branch_code = $1, to_branch_code = $2, status = $3, items = $4, updated_at = NOW() WHERE id = $5',
           dto.fromBranch,
           dto.toBranch,
           dto.status,
@@ -246,7 +246,7 @@ export class PrismaTransferRepository implements TransferRepositoryPort {
         );
       } else {
         await tx.$executeRawUnsafe(
-          `INSERT INTO stock_transfers (id, from_branch, to_branch, status, items, created_by, created_at, updated_at)
+          `INSERT INTO stock_transfers (id, from_branch_code, to_branch_code, status, items, created_by, created_at, updated_at)
            VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())`,
           dto.id,
           dto.fromBranch,
@@ -267,8 +267,8 @@ export class PrismaTransferRepository implements TransferRepositoryPort {
       : JSON.parse(row.items ?? '[]');
     return StockTransfer.rehydrate({
       id: row.id,
-      fromBranch: row.from_branch,
-      toBranch: row.to_branch,
+      fromBranch: row.from_branch_code,
+      toBranch: row.to_branch_code,
       status: row.status,
       items,
       createdBy: row.created_by,

@@ -5,12 +5,11 @@ import type {
   InventoryValuationReport,
 } from '../../domain/entities/report.entities.js';
 
-function createWorkbook(title: string): {
+async function createWorkbook(title: string): Promise<{
   workbook: import('exceljs').Workbook;
   sheet: import('exceljs').Worksheet;
-} {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const ExcelJS = require('exceljs') as typeof import('exceljs');
+}> {
+  const { default: ExcelJS } = await import('exceljs');
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet(title);
 
@@ -34,8 +33,8 @@ function setColumnWidths(sheet: import('exceljs').Worksheet, width: number): voi
   }
 }
 
-export function dailySalesTemplate(data: DailySalesReport[]): import('exceljs').Workbook {
-  const { workbook, sheet } = createWorkbook('Reporte de Ventas Diarias');
+export async function dailySalesTemplate(data: DailySalesReport[]): Promise<import('exceljs').Workbook> {
+  const { workbook, sheet } = await createWorkbook('Reporte de Ventas Diarias');
 
   setHeaders(sheet, [
     'Fecha',
@@ -68,8 +67,8 @@ export function dailySalesTemplate(data: DailySalesReport[]): import('exceljs').
   return workbook;
 }
 
-export function categorySalesTemplate(data: CategorySalesReport[]): import('exceljs').Workbook {
-  const { workbook, sheet } = createWorkbook('Ventas por Categoria');
+export async function categorySalesTemplate(data: CategorySalesReport[]): Promise<import('exceljs').Workbook> {
+  const { workbook, sheet } = await createWorkbook('Ventas por Categoria');
 
   setHeaders(sheet, ['Fecha', 'Sucursal', 'Categoria', 'Unidades', 'Total Ventas', 'Utilidad']);
 
@@ -91,10 +90,10 @@ export function categorySalesTemplate(data: CategorySalesReport[]): import('exce
   return workbook;
 }
 
-export function inventoryValuationTemplate(
+export async function inventoryValuationTemplate(
   data: InventoryValuationReport[],
-): import('exceljs').Workbook {
-  const { workbook, sheet } = createWorkbook('Inventario Valorizado');
+): Promise<import('exceljs').Workbook> {
+  const { workbook, sheet } = await createWorkbook('Inventario Valorizado');
 
   setHeaders(sheet, ['Sucursal', 'Producto', 'Cantidad', 'Costo Promedio', 'Valorizacion']);
 
@@ -115,8 +114,8 @@ export function inventoryValuationTemplate(
   return workbook;
 }
 
-export function cashReportTemplate(data: CashSummaryReport[]): import('exceljs').Workbook {
-  const { workbook, sheet } = createWorkbook('Reporte de Caja');
+export async function cashReportTemplate(data: CashSummaryReport[]): Promise<import('exceljs').Workbook> {
+  const { workbook, sheet } = await createWorkbook('Reporte de Caja');
 
   setHeaders(sheet, [
     'Fecha',

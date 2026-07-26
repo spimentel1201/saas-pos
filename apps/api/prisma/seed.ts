@@ -118,7 +118,7 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
       );
     }
 
-    // Obtener branch IDs
+    // Obtener branch codes
     const branchResult = await client.query(`SELECT id, code FROM branches ORDER BY code`);
     const branchIds = branchResult.rows as { id: string; code: string }[];
 
@@ -178,14 +178,14 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
 
     // Inventory stocks (for first branch)
     if (branchIds.length > 0) {
-      const defaultBranchId = branchIds[0].id;
+      const defaultBranchCode = branchIds[0].code;
       for (const pid of productIds) {
         const stock = Math.floor(Math.random() * 50) + 10;
         await client.query(
-          `INSERT INTO inventory_stocks (branch_id, product_id, qty, min_qty, max_qty, avg_cost)
+          `INSERT INTO inventory_stocks (branch_code, product_id, qty, min_qty, max_qty, avg_cost)
            VALUES ($1, $2, $3, 5, 100, $4)
-           ON CONFLICT (branch_id, product_id) DO NOTHING`,
-          [defaultBranchId, pid, stock, stock * 0.6],
+           ON CONFLICT (branch_code, product_id) DO NOTHING`,
+          [defaultBranchCode, pid, stock, stock * 0.6],
         );
       }
     }
@@ -196,7 +196,7 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
     for (let i = 0; i < 5; i++) {
       const poId = `po-${schemaName}-${String(i + 1).padStart(3, '0')}`;
       poIds.push(poId);
-      const branchId = branchIds[i % branchIds.length].id;
+      const branchCode = branchIds[i % branchIds.length].code;
       const supplierIdx = i % SUPPLIERS.length;
       const items = [
         { productId: productIds[i * 3 % productIds.length], qty: 10 + i * 5, unitCost: PRODUCTS[i * 3 % PRODUCTS.length].cost },
@@ -205,10 +205,10 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
       const total = items.reduce((sum, item) => sum + item.qty * item.unitCost, 0);
 
       await client.query(
-        `INSERT INTO purchase_orders (id, branch_id, supplier_id, status, total, items, created_by, created_at)
+        `INSERT INTO purchase_orders (id, branch_code, supplier_id, status, total, items, created_by, created_at)
          VALUES ($1, $2, $3, $4, $5, $6, 'seed-user', now() - interval '${5 - i} days')
          ON CONFLICT (id) DO NOTHING`,
-        [poId, branchId, SUPPLIERS[supplierIdx].id, poStatuses[i], total, JSON.stringify(items)],
+        [poId, branchCode, SUPPLIERS[supplierIdx].id, poStatuses[i], total, JSON.stringify(items)],
       );
 
       // Create receipts for RECEIVED orders
@@ -226,15 +226,15 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
       const transferStatuses = ['PENDING', 'RECEIVED'];
       for (let i = 0; i < 2; i++) {
         const transferId = `transfer-${schemaName}-${String(i + 1).padStart(3, '0')}`;
-        const fromBranch = branchIds[0].id;
-        const toBranch = branchIds[1].id;
+        const fromBranch = branchIds[0].code;
+        const toBranch = branchIds[1].code;
         const items = [
           { productId: productIds[i * 2 % productIds.length], qty: 5 },
           { productId: productIds[(i * 2 + 1) % productIds.length], qty: 3 },
         ];
 
         await client.query(
-          `INSERT INTO stock_transfers (id, from_branch_id, to_branch_id, status, items, created_by, created_at)
+          `INSERT INTO stock_transfers (id, from_branch_code, to_branch_code, status, items, created_by, created_at)
            VALUES ($1, $2, $3, $4, $5, 'seed-user', now() - interval '${2 - i} days')
            ON CONFLICT (id) DO NOTHING`,
           [transferId, fromBranch, toBranch, transferStatuses[i], JSON.stringify(items)],
@@ -245,17 +245,17 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
     // Cash Sessions (3 per tenant: 2 closed, 1 open)
     const cashSessionIds: bigint[] = [];
     for (let i = 0; i < 3; i++) {
-      const branchId = branchIds[i % branchIds.length].id;
+      const branchCode = branchIds[i % branchIds.length].code;
       const openingBalance = 500 + i * 100;
       const salesInSession = 300 + i * 150;
       const expectedBalance = openingBalance + salesInSession;
       const isOpen = i === 2; // Last one is open
 
       const result = await client.query(
-        `INSERT INTO cash_sessions (branch_id, user_id, opening_balance, expected_balance, status, closed_at, opened_at)
+        `INSERT INTO cash_sessions (branch_code, user_id, opening_balance, expected_balance, status, closed_at, opened_at)
          VALUES ($1, 'seed-user', $2, $3, $4, ${isOpen ? 'NULL' : 'now()'}, now() - interval '${3 - i} hours')
          RETURNING id`,
-        [branchId, openingBalance, expectedBalance, isOpen ? 'OPEN' : 'CLOSED'],
+        [branchCode, openingBalance, expectedBalance, isOpen ? 'OPEN' : 'CLOSED'],
       );
       if (result.rows[0]) {
         cashSessionIds.push(result.rows[0].id);
@@ -285,7 +285,7 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
     for (let i = 0; i < 10; i++) {
       const saleId = `sale-${schemaName}-${String(i + 1).padStart(3, '0')}`;
       saleIds.push(saleId);
-      const branchId = branchIds[i % branchIds.length].id;
+      const branchCode = branchIds[i % branchIds.length].code;
       const customerId = customerIds[i % customerIds.length];
 
       // Multiple items per sale (1-3 items)
@@ -320,10 +320,10 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
       saleDate.setDate(saleDate.getDate() - (10 - i));
 
       await client.query(
-        `INSERT INTO sales (id, branch_id, user_id, number_seq, customer_id, subtotal, tax, total, status, created_at)
+        `INSERT INTO sales (id, branch_code, user_id, number_seq, customer_id, subtotal, tax, total, status, created_at)
          VALUES ($1, $2, 'seed-user', $3, $4, $5, $6, $7, $8, $9)
          ON CONFLICT (id) DO NOTHING`,
-        [saleId, branchId, i + 1, customerId, subtotal, taxTotal, total, saleStatuses[i], saleDate.toISOString()],
+        [saleId, branchCode, i + 1, customerId, subtotal, taxTotal, total, saleStatuses[i], saleDate.toISOString()],
       );
 
       // Sale items
@@ -363,20 +363,20 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
 
     // Inventory Movements (for each product in first branch)
     if (branchIds.length > 0) {
-      const defaultBranchId = branchIds[0].id;
+      const defaultBranchCode = branchIds[0].code;
       const movementTypes = ['PURCHASE', 'SALE', 'ADJUSTMENT'];
       for (let i = 0; i < Math.min(productIds.length, 8); i++) {
         const stockResult = await client.query(
-          `SELECT id FROM inventory_stocks WHERE branch_id = $1 AND product_id = $2`,
-          [defaultBranchId, productIds[i]],
+          `SELECT id FROM inventory_stocks WHERE branch_code = $1 AND product_id = $2`,
+          [defaultBranchCode, productIds[i]],
         );
         if (stockResult.rows[0]) {
           const stockId = stockResult.rows[0].id;
           const delta = i % 3 === 0 ? 10 : i % 3 === 1 ? -5 : 2;
           await client.query(
-            `INSERT INTO inventory_movements (stock_id, type, delta, reason, ref, branch_id, user_id)
+            `INSERT INTO inventory_movements (stock_id, type, delta, reason, ref, branch_code, user_id)
              VALUES ($1, $2, $3, $4, $5, $6, 'seed-user')`,
-            [stockId, movementTypes[i % 3], delta, `Ajuste seed #${i + 1}`, `REF-${i + 1}`, defaultBranchId],
+            [stockId, movementTypes[i % 3], delta, `Ajuste seed #${i + 1}`, `REF-${i + 1}`, defaultBranchCode],
           );
         }
       }

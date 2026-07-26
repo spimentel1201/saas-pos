@@ -25,7 +25,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
       let idx = 1;
 
       if (filter.branchId) {
-        conditions.push(`s.branch_id = $${idx++}`);
+        conditions.push(`s.branch_code = $${idx++}`);
         params.push(filter.branchId);
       }
       if (filter.from) {
@@ -48,7 +48,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
 
       // biome-ignore lint/suspicious/noExplicitAny: raw SQL query
       const rows = await tx.$queryRawUnsafe<any[]>(
-        `SELECT s.branch_id, b.name as branch_name,
+        `SELECT s.branch_code, b.name as branch_name,
                 date_trunc('day', s.created_at) as day,
                 si.product_id, p.name as product_name,
                 p.category_id, coalesce(cat.name, 'Sin categoria') as category_name,
@@ -58,19 +58,19 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
                 sum(si.total) as gross_total,
                 sum(si.total - si.qty * p.cost) as gross_profit
          FROM sales s
-         JOIN branches b ON b.id = s.branch_id
+         JOIN branches b ON b.code = s.branch_code
          JOIN sale_items si ON si.sale_id = s.id
          JOIN products p ON p.id = si.product_id
          LEFT JOIN categories cat ON cat.id = p.category_id
          ${finalWhere}
-         GROUP BY s.branch_id, b.name, date_trunc('day', s.created_at),
+         GROUP BY s.branch_code, b.name, date_trunc('day', s.created_at),
                   si.product_id, p.name, p.category_id, cat.name, s.user_id
          ORDER BY day DESC, gross_total DESC`,
         ...params,
       );
 
       return rows.map((r) => ({
-        branchId: r.branch_id,
+        branchId: r.branch_code,
         branchName: r.branch_name,
         day: new Date(r.day),
         productId: r.product_id,
@@ -94,7 +94,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
       let idx = 1;
 
       if (filter.branchId) {
-        conditions.push(`s.branch_id = $${idx++}`);
+        conditions.push(`s.branch_code = $${idx++}`);
         params.push(filter.branchId);
       }
       if (filter.from) {
@@ -110,25 +110,25 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
 
       // biome-ignore lint/suspicious/noExplicitAny: raw SQL query
       const rows = await tx.$queryRawUnsafe<any[]>(
-        `SELECT s.branch_id, b.name as branch_name,
+        `SELECT s.branch_code, b.name as branch_name,
                 date_trunc('day', s.created_at) as day,
                 p.category_id, coalesce(cat.name, 'Sin categoria') as category_name,
                 sum(si.total) as gross_total,
                 sum(si.total - si.qty * p.cost) as gross_profit,
                 sum(si.qty) as qty_sold
          FROM sales s
-         JOIN branches b ON b.id = s.branch_id
+         JOIN branches b ON b.code = s.branch_code
          JOIN sale_items si ON si.sale_id = s.id
          JOIN products p ON p.id = si.product_id
          LEFT JOIN categories cat ON cat.id = p.category_id
          ${where}
-         GROUP BY s.branch_id, b.name, date_trunc('day', s.created_at), p.category_id, cat.name
+         GROUP BY s.branch_code, b.name, date_trunc('day', s.created_at), p.category_id, cat.name
          ORDER BY day DESC, gross_total DESC`,
         ...params,
       );
 
       return rows.map((r) => ({
-        branchId: r.branch_id,
+        branchId: r.branch_code,
         branchName: r.branch_name,
         day: new Date(r.day),
         categoryId: r.category_id ?? '',
@@ -142,17 +142,17 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
 
   async getInventoryValuation(branchId?: string): Promise<InventoryValuationReport[]> {
     return this.tenantPrisma.withTenant(async (tx) => {
-      const where = branchId ? 'WHERE ist.branch_id = $1' : '';
+      const where = branchId ? 'WHERE ist.branch_code = $1' : '';
       const params = branchId ? [branchId] : [];
 
       // biome-ignore lint/suspicious/noExplicitAny: raw SQL query
       const rows = await tx.$queryRawUnsafe<any[]>(
-        `SELECT ist.branch_id, b.name as branch_name,
+        `SELECT ist.branch_code, b.name as branch_name,
                 ist.product_id, p.name as product_name,
                 ist.qty, ist.avg_cost,
                 ist.qty * ist.avg_cost as valuation
          FROM inventory_stocks ist
-         JOIN branches b ON b.id = ist.branch_id
+         JOIN branches b ON b.code = ist.branch_code
          JOIN products p ON p.id = ist.product_id
          ${where}
          ORDER BY valuation DESC`,
@@ -160,7 +160,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
       );
 
       return rows.map((r) => ({
-        branchId: r.branch_id,
+        branchId: r.branch_code,
         branchName: r.branch_name,
         productId: r.product_id,
         productName: r.product_name,
@@ -179,7 +179,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
       let idx = 1;
 
       if (filter.branchId) {
-        conditions.push(`cs.branch_id = $${idx++}`);
+        conditions.push(`cs.branch_code = $${idx++}`);
         params.push(filter.branchId);
       }
       if (filter.from) {
@@ -195,7 +195,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
 
       // biome-ignore lint/suspicious/noExplicitAny: raw SQL query
       const rows = await tx.$queryRawUnsafe<any[]>(
-        `SELECT cs.branch_id, b.name as branch_name,
+        `SELECT cs.branch_code, b.name as branch_name,
                 date_trunc('day', cs.opened_at) as day,
                 count(*) as session_count,
                 sum(cs.opening_balance) as total_opening,
@@ -203,15 +203,15 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
                 coalesce(sum(cs.counted_balance), 0) as total_collected,
                 coalesce(sum(cs.difference), 0) as total_difference
          FROM cash_sessions cs
-         JOIN branches b ON b.id = cs.branch_id
+         JOIN branches b ON b.code = cs.branch_code
          ${where}
-         GROUP BY cs.branch_id, b.name, date_trunc('day', cs.opened_at)
+         GROUP BY cs.branch_code, b.name, date_trunc('day', cs.opened_at)
          ORDER BY day DESC`,
         ...params,
       );
 
       return rows.map((r) => ({
-        branchId: r.branch_id,
+        branchId: r.branch_code,
         branchName: r.branch_name,
         day: new Date(r.day),
         sessionCount: Number(r.session_count),
@@ -231,7 +231,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
       let idx = 1;
 
       if (filter.branchId) {
-        conditions.push(`s.branch_id = $${idx++}`);
+        conditions.push(`s.branch_code = $${idx++}`);
         params.push(filter.branchId);
       }
       if (filter.from) {
@@ -278,7 +278,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
       let idx = 1;
 
       if (filter.branchId) {
-        conditions.push(`s.branch_id = $${idx++}`);
+        conditions.push(`s.branch_code = $${idx++}`);
         params.push(filter.branchId);
       }
       if (filter.from) {

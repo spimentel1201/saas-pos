@@ -14,7 +14,7 @@ import type {
 
 describe('Excel Templates', () => {
   describe('dailySalesTemplate', () => {
-    it('creates a workbook with daily sales data', () => {
+    it('creates a workbook with daily sales data', async () => {
       const data: DailySalesReport[] = [
         {
           branchId: 'branch_1',
@@ -32,7 +32,7 @@ describe('Excel Templates', () => {
         },
       ];
 
-      const workbook = dailySalesTemplate(data);
+      const workbook = await dailySalesTemplate(data);
 
       expect(workbook).toBeDefined();
       expect(workbook.worksheets).toHaveLength(1);
@@ -57,7 +57,7 @@ describe('Excel Templates', () => {
   });
 
   describe('categorySalesTemplate', () => {
-    it('creates a workbook with category sales data', () => {
+    it('creates a workbook with category sales data', async () => {
       const data: CategorySalesReport[] = [
         {
           branchId: 'branch_1',
@@ -71,7 +71,7 @@ describe('Excel Templates', () => {
         },
       ];
 
-      const workbook = categorySalesTemplate(data);
+      const workbook = await categorySalesTemplate(data);
 
       expect(workbook).toBeDefined();
       const sheet = workbook.worksheets[0];
@@ -85,7 +85,7 @@ describe('Excel Templates', () => {
   });
 
   describe('inventoryValuationTemplate', () => {
-    it('creates a workbook with inventory data', () => {
+    it('creates a workbook with inventory data', async () => {
       const data: InventoryValuationReport[] = [
         {
           branchId: 'branch_1',
@@ -98,7 +98,7 @@ describe('Excel Templates', () => {
         },
       ];
 
-      const workbook = inventoryValuationTemplate(data);
+      const workbook = await inventoryValuationTemplate(data);
 
       expect(workbook).toBeDefined();
       const sheet = workbook.worksheets[0];
@@ -114,7 +114,7 @@ describe('Excel Templates', () => {
   });
 
   describe('cashReportTemplate', () => {
-    it('creates a workbook with cash report data', () => {
+    it('creates a workbook with cash report data', async () => {
       const data: CashSummaryReport[] = [
         {
           branchId: 'branch_1',
@@ -128,7 +128,7 @@ describe('Excel Templates', () => {
         },
       ];
 
-      const workbook = cashReportTemplate(data);
+      const workbook = await cashReportTemplate(data);
 
       expect(workbook).toBeDefined();
       const sheet = workbook.worksheets[0];
@@ -145,8 +145,8 @@ describe('Excel Templates', () => {
   });
 
   describe('empty data', () => {
-    it('handles empty data array', () => {
-      const workbook = dailySalesTemplate([]);
+    it('handles empty data array', async () => {
+      const workbook = await dailySalesTemplate([]);
 
       expect(workbook).toBeDefined();
       const sheet = workbook.worksheets[0];
