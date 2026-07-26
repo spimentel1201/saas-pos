@@ -13,7 +13,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 WORKDIR /app/apps/api
-RUN npx prisma generate
+RUN npx prisma generate --schema=./prisma/schema.prisma
 RUN pnpm build
 
 FROM node:22-alpine AS runner
