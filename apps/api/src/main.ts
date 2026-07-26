@@ -64,7 +64,7 @@ async function bootstrap(): Promise<void> {
       .addTag('users', 'Usuarios y roles')
       .build();
     const document = SwaggerModule.createDocument(app, swaggerConfig);
-    SwaggerModule.setup('api/v1/docs', app, document, {
+    SwaggerModule.setup('docs', app, document, {
       swaggerOptions: { persistAuthorization: true },
     });
     Logger.log('Swagger en /api/v1/docs', 'Swagger');
