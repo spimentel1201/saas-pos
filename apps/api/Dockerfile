@@ -25,8 +25,9 @@ RUN apk add --no-cache libc6-compat openssl
 
 COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/apps/api/prisma ./prisma
+COPY apps/api/package.json ./
 
-RUN npm init -y && npm install --omit=dev @prisma/client@6 prisma@6
+RUN npm install --omit=dev && npm install prisma@6
 RUN npx prisma generate --schema=prisma/schema.prisma
 
 EXPOSE 3000
