@@ -1,36 +1,14 @@
-FROM node:22-alpine AS base
-RUN apk add --no-cache libc6-compat
-WORKDIR /app
-RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
-
-FROM base AS deps
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
-COPY apps/api/package.json ./apps/api/
-COPY packages/types/package.json ./packages/types/
-COPY packages/storage/package.json ./packages/storage/
-COPY packages/ui/package.json ./packages/ui/
-RUN pnpm install --frozen-lockfile
-
-FROM base AS builder
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-
-RUN cd apps/api && npx -y prisma@6 generate --schema=prisma/schema.prisma
-RUN cd apps/api && pnpm build
-
-FROM node:22-alpine AS runner
-WORKDIR /app
-ENV NODE_ENV=production
+FROM node:22-alpine
 RUN apk add --no-cache libc6-compat openssl
+WORKDIR /app
 
-COPY --from=builder /app/apps/api/dist ./dist
-COPY --from=builder /app/apps/api/prisma ./prisma
-COPY --from=builder /app/apps/api/package.json ./package.json
-COPY --from=builder /app/apps/api/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/apps/api/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/apps/api/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/apps/api/start.sh ./start.sh
-RUN chmod +x ./start.sh
+COPY apps/api/package.json ./
+RUN npm install --omit=dev prisma@6 @prisma/client@6
+
+COPY apps/api/prisma ./prisma
+RUN npx prisma generate --schema=prisma/schema.prisma
+
+COPY apps/api/dist ./dist
 
 EXPOSE 3000
-CMD ["./start.sh"]
+CMD ["node", "dist/main.js"]
