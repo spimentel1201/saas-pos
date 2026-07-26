@@ -20,6 +20,7 @@ RUN cd apps/api && npx -y tsc -p tsconfig.json
 FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production
+ENV NODE_OPTIONS="--max-old-space-size=384"
 RUN apk add --no-cache libc6-compat openssl
 
 COPY --from=builder /app/apps/api/dist ./dist
@@ -29,4 +30,4 @@ RUN npm init -y && npm install --omit=dev @prisma/client@6 prisma@6
 RUN npx prisma generate --schema=prisma/schema.prisma
 
 EXPOSE 3000
-CMD ["node", "dist/main.js"]
+CMD ["node", "--max-old-space-size=384", "dist/main.js"]
