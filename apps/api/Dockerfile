@@ -15,7 +15,7 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN node_modules/.bin/prisma generate --schema=apps/api/prisma/schema.prisma
+RUN pnpm exec prisma generate --schema=apps/api/prisma/schema.prisma
 RUN cd apps/api && pnpm build
 
 FROM node:22-alpine AS runner
