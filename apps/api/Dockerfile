@@ -25,10 +25,10 @@ RUN apk add --no-cache libc6-compat openssl
 
 COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/apps/api/prisma ./prisma
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/apps/api/package.json ./
-COPY --from=builder /app/apps/api/node_modules/.bin ./node_modules/.bin
+COPY --from=builder /app/apps/api/package.json ./package.json
+COPY --from=builder /app/apps/api/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/apps/api/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/apps/api/node_modules/prisma ./node_modules/prisma
 
 EXPOSE 3000
-CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy --schema=./prisma/schema.prisma && node dist/main.js"]
+CMD ["node", "dist/main.js"]
