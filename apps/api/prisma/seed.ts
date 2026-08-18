@@ -98,6 +98,18 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL no definida');
 
+  // Si CLEAN_SEED, dropear schema existente primero
+  if (process.env.CLEAN_SEED === 'true') {
+    const dropClient = new pg.Client({ connectionString: url });
+    await dropClient.connect();
+    try {
+      await dropClient.query(`DROP SCHEMA IF EXISTS ${schemaName} CASCADE`);
+      console.log(`  🗑️  Schema ${schemaName} eliminado`);
+    } finally {
+      await dropClient.end();
+    }
+  }
+
   // Crear schema usando create-schema.ts
   const createSchemaPath = resolve(import.meta.dirname, 'tenants', 'create-schema.ts');
   const { execSync } = await import('node:child_process');
@@ -176,16 +188,15 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
       );
     }
 
-    // Inventory stocks (for first branch)
-    if (branchIds.length > 0) {
-      const defaultBranchCode = branchIds[0].code;
+    // Inventory stocks (for all branches)
+    for (const branch of branchIds) {
       for (const pid of productIds) {
         const stock = Math.floor(Math.random() * 50) + 10;
         await client.query(
           `INSERT INTO inventory_stocks (branch_code, product_id, qty, min_qty, max_qty, avg_cost)
            VALUES ($1, $2, $3, 5, 100, $4)
            ON CONFLICT (branch_code, product_id) DO NOTHING`,
-          [defaultBranchCode, pid, stock, stock * 0.6],
+          [branch.code, pid, stock, stock * 0.6],
         );
       }
     }
@@ -278,11 +289,11 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
       }
     }
 
-    // Sales (10 per tenant with multiple items)
-    const paymentMethods = ['CASH', 'CARD', 'TRANSFER', 'CASH', 'CARD'];
-    const saleStatuses = ['COMPLETED', 'COMPLETED', 'COMPLETED', 'COMPLETED', 'VOID', 'COMPLETED', 'COMPLETED', 'RETURNED', 'COMPLETED', 'COMPLETED'];
+    // Sales (15 per tenant: spread across last 7 days + today)
+    const paymentMethods = ['CASH', 'CARD', 'TRANSFER', 'CASH', 'CARD', 'CASH', 'YAPE', 'CARD', 'TRANSFER', 'PLIN', 'CASH', 'CARD', 'CASH', 'TRANSFER', 'CASH'];
+    const saleStatuses = ['COMPLETED', 'COMPLETED', 'COMPLETED', 'COMPLETED', 'VOID', 'COMPLETED', 'COMPLETED', 'RETURNED', 'COMPLETED', 'COMPLETED', 'COMPLETED', 'COMPLETED', 'COMPLETED', 'COMPLETED', 'COMPLETED'];
     const saleIds: string[] = [];
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 15; i++) {
       const saleId = `sale-${schemaName}-${String(i + 1).padStart(3, '0')}`;
       saleIds.push(saleId);
       const branchCode = branchIds[i % branchIds.length].code;
@@ -317,7 +328,14 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
 
       const total = subtotal + taxTotal;
       const saleDate = new Date();
-      saleDate.setDate(saleDate.getDate() - (10 - i));
+      if (i < 12) {
+        // Spread last 12 sales across last 7 days (2 per day)
+        saleDate.setDate(saleDate.getDate() - Math.floor((11 - i) / 2));
+        saleDate.setHours(9 + (i % 4) * 3, Math.floor(Math.random() * 60), 0, 0);
+      } else {
+        // Last 3 sales are today at different hours
+        saleDate.setHours(8 + i, Math.floor(Math.random() * 60), 0, 0);
+      }
 
       await client.query(
         `INSERT INTO sales (id, branch_code, user_id, number_seq, customer_id, subtotal, tax, total, status, created_at)
@@ -384,7 +402,7 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
 
     console.log(`✅ Tenant ${schemaName} poblado correctamente`);
     console.log(`   📦 ${5} órdenes de compra, ${2} transferencias, ${3} sesiones de caja`);
-    console.log(`   💰 ${10} ventas, ${2} devoluciones, ${8} movimientos de inventario`);
+    console.log(`   💰 ${15} ventas, ${2} devoluciones, ${8} movimientos de inventario`);
   } finally {
     await client.end();
   }
