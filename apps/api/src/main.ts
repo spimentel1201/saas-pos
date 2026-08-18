@@ -25,9 +25,12 @@ async function bootstrap(): Promise<void> {
   const isProd = config.get<string>('NODE_ENV') === 'production';
 
   // CORS para el frontend Next.js
+  // Requiere @fastify/cors instalado (pnpm add @fastify/cors)
   app.enableCors({
     origin: isProd ? [`https://*.${config.get<string>('TENANT_BASE_DOMAIN')}`] : true,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-Slug', 'Accept'],
   });
 
   // Validacion global de DTOs (class-validator)

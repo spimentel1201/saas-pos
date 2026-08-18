@@ -18,6 +18,7 @@ import {
   UpdateBranchDto,
   UpdateSettingsDto,
   UpdateTaxDto,
+  UpdateTicketHeaderDto,
 } from '../../application/dto/config.dto.js';
 import {
   BranchUseCases,
@@ -139,7 +140,8 @@ export class ConfigController {
   @Patch('settings/ticket-header')
   @Audit('UPDATE', 'Settings')
   @ApiOperation({ summary: 'Actualizar ticket header' })
-  async updateTicketHeader(@Body() dto: Record<string, string>) {
+  @ApiBody({ type: UpdateTicketHeaderDto })
+  async updateTicketHeader(@Body() dto: UpdateTicketHeaderDto) {
     return this.settingsUseCases.updateTicketHeader(dto);
   }
 }

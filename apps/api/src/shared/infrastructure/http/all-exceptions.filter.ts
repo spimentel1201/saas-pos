@@ -77,7 +77,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       type: 'about:blank',
       title: 'Internal Server Error',
       status: HttpStatus.INTERNAL_SERVER_ERROR,
-      detail: process.env.NODE_ENV === 'production' ? undefined : (exception as Error)?.message,
+      detail: 'Error interno del servidor',
       instance: req.url,
     };
   }

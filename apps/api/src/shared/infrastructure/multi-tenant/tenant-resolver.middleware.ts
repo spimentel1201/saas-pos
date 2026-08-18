@@ -50,7 +50,10 @@ export class TenantResolverMiddleware implements NestMiddleware {
       return;
     }
 
-    await TenantContext.run(tenant, () => Promise.resolve(next()));
+    await TenantContext.run(
+      { ...tenant, timezone: process.env.DEFAULT_TIMEZONE || 'America/Lima' },
+      () => Promise.resolve(next()),
+    );
   }
 
   private resolveSlug(req: FastifyRequestWithRaw): string | null {

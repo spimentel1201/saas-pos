@@ -47,11 +47,11 @@ export class CashController {
   @ApiParam({ name: 'sessionId', type: Number })
   @ApiBody({ type: CloseCashSessionDto })
   async close(
-    @CurrentUser() user: { sub: string },
+    @CurrentUser() user: { sub: string; role?: string },
     @Param('sessionId') sessionId: string,
     @Body() dto: CloseCashSessionDto,
   ) {
-    return this.cashUseCases.closeSession(Number(sessionId), user.sub, dto);
+    return this.cashUseCases.closeSession(Number(sessionId), user, dto);
   }
 
   @Post(':sessionId/movements')
@@ -60,11 +60,11 @@ export class CashController {
   @ApiParam({ name: 'sessionId', type: Number })
   @ApiBody({ type: AddCashMovementDto })
   async addMovement(
-    @CurrentUser() user: { sub: string },
+    @CurrentUser() user: { sub: string; role?: string },
     @Param('sessionId') sessionId: string,
     @Body() dto: AddCashMovementDto,
   ) {
-    return this.cashUseCases.addMovement(Number(sessionId), user.sub, dto);
+    return this.cashUseCases.addMovement(Number(sessionId), user, dto);
   }
 
   @Get()

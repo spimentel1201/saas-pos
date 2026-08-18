@@ -126,6 +126,8 @@ export class SignupUseCase {
       accessToken,
       refreshToken,
       userId: user.id,
+      userName: user.name ?? '',
+      userEmail: user.email,
       primaryRole: 'OWNER',
       tenantSlug: slug,
       tenantId,

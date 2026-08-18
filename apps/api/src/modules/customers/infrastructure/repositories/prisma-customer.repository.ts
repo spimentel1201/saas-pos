@@ -248,6 +248,7 @@ export class PrismaCustomerRepository implements CustomerRepositoryPort {
           saleId: sale.id,
           createdAt: new Date(sale.created_at),
           total: Number(sale.total),
+          status: sale.status as string,
           items: items.map((i) => ({
             productName: i.product_name,
             qty: Number(i.qty),
