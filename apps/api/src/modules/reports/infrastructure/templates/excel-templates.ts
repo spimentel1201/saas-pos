@@ -58,7 +58,7 @@ export async function dailySalesTemplate(data: DailySalesReport[]): Promise<impo
         row.qtySold,
         row.grossTotal,
         row.grossProfit,
-        row.userId,
+        row.userName,
       ];
     }
   }

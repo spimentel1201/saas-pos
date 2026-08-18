@@ -17,6 +17,20 @@ export class CheckoutItemDto {
   @IsString()
   productId!: string;
 
+  @ApiProperty()
+  @IsString()
+  productName!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  productSku?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  barcode?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
@@ -51,9 +65,9 @@ export class CheckoutItemDto {
 }
 
 export class CheckoutPaymentDto {
-  @ApiProperty({ enum: ['CASH', 'CARD', 'TRANSFER', 'CREDIT', 'MIXED'] })
-  @IsEnum(['CASH', 'CARD', 'TRANSFER', 'CREDIT', 'MIXED'])
-  method!: 'CASH' | 'CARD' | 'TRANSFER' | 'CREDIT' | 'MIXED';
+  @ApiProperty({ enum: ['CASH', 'CARD', 'TRANSFER', 'CREDIT', 'YAPE', 'PLIN', 'MIXED'] })
+  @IsEnum(['CASH', 'CARD', 'TRANSFER', 'CREDIT', 'YAPE', 'PLIN', 'MIXED'])
+  method!: 'CASH' | 'CARD' | 'TRANSFER' | 'CREDIT' | 'YAPE' | 'PLIN' | 'MIXED';
 
   @ApiProperty({ example: 25.0 })
   @Type(() => Number)

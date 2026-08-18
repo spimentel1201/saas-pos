@@ -4,6 +4,7 @@ import type {
   DailySalesReport,
   HourlyHeatmap,
   InventoryValuationReport,
+  PaymentMethodReport,
   TopProduct,
 } from '../../domain/entities/report.entities.js';
 
@@ -20,6 +21,7 @@ export interface ReportsRepositoryPort {
   getInventoryValuation(branchId?: string): Promise<InventoryValuationReport[]>;
   getCashSummary(filter: ReportFilter): Promise<CashSummaryReport[]>;
   getTopProducts(filter: ReportFilter, limit?: number): Promise<TopProduct[]>;
+  getPaymentMethodSales(filter: ReportFilter): Promise<PaymentMethodReport[]>;
   getHourlyHeatmap(filter: ReportFilter): Promise<HourlyHeatmap[]>;
   getLowStockCount(): Promise<number>;
   getTodaySalesTotal(): Promise<number>;

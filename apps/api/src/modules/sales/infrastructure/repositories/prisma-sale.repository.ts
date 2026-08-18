@@ -23,19 +23,14 @@ export class PrismaSaleRepository implements SaleRepositoryPort {
     private readonly tenantPrisma: TenantPrismaService,
   ) {}
 
-  async nextNumberSeq(branchCode: string, date: Date): Promise<number> {
-    const dayStart = new Date(date);
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(dayStart);
-    dayEnd.setDate(dayEnd.getDate() + 1);
-
+  async nextNumberSeq(branchCode: string, _date: Date): Promise<number> {
     return this.tenantPrisma.withTenant(async (tx) => {
       const rows = (await tx.$queryRawUnsafe(
         `SELECT COUNT(*) as cnt FROM sales
-         WHERE branch_code = $1 AND created_at >= $2 AND created_at < $3`,
+         WHERE branch_code = $1
+           AND created_at >= date_trunc('day', now())
+           AND created_at < date_trunc('day', now()) + interval '1 day'`,
         branchCode,
-        dayStart,
-        dayEnd,
       )) as { cnt: bigint }[];
       return Number(rows[0]?.cnt ?? 0) + 1;
     });
@@ -69,10 +64,13 @@ export class PrismaSaleRepository implements SaleRepositoryPort {
       // 2. Insertar items + restar stock + registrar movimiento inventory
       for (const item of input.items) {
         await tx.$executeRawUnsafe(
-          `INSERT INTO sale_items (sale_id, product_id, variant_id, qty, unit_price, tax_amount, discount, total)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          `INSERT INTO sale_items (sale_id, product_id, product_name, product_sku, barcode, variant_id, qty, unit_price, tax_amount, discount, total)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
           input.saleId,
           item.productId,
+          item.productName,
+          item.productSku ?? null,
+          item.barcode ?? null,
           item.variantId ?? null,
           item.qty,
           item.unitPrice,
@@ -151,6 +149,9 @@ export class PrismaSaleRepository implements SaleRepositoryPort {
     const items = input.items.map((i: SaleItem) =>
       SaleItem.rehydrate({
         productId: i.productId,
+        productName: i.productName,
+        productSku: i.productSku,
+        barcode: i.barcode,
         variantId: i.variantId,
         qty: i.qty,
         unitPrice: i.unitPrice,
@@ -209,7 +210,7 @@ export class PrismaSaleRepository implements SaleRepositoryPort {
   // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries on tx client
   private async fetchItems(tx: any, saleId: string): Promise<Record<string, unknown>[]> {
     const result = await tx.$queryRawUnsafe(
-      `SELECT product_id, variant_id, qty, unit_price, tax_amount, discount, total
+      `SELECT product_id, product_name, product_sku, barcode, variant_id, qty, unit_price, tax_amount, discount, total
        FROM sale_items WHERE sale_id = $1`,
       saleId,
     );
@@ -230,6 +231,9 @@ export class PrismaSaleRepository implements SaleRepositoryPort {
     const itemEntities = items.map((i) =>
       SaleItem.rehydrate({
         productId: i.product_id,
+        productName: i.product_name ?? '',
+        productSku: i.product_sku ?? undefined,
+        barcode: i.barcode ?? undefined,
         variantId: i.variant_id ?? undefined,
         qty: Number(i.qty),
         unitPrice: Number(i.unit_price),
@@ -435,6 +439,9 @@ export class PrismaSaleRepository implements SaleRepositoryPort {
     const itemEntities = items.map((i: any) =>
       SaleItem.rehydrate({
         productId: i.productId,
+        productName: i.productName ?? i.product_name ?? '',
+        productSku: i.productSku ?? i.product_sku ?? undefined,
+        barcode: i.barcode ?? undefined,
         variantId: i.variantId,
         qty: i.qty,
         unitPrice: i.unitPrice,

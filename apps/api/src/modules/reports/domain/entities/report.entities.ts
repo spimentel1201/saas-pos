@@ -7,6 +7,7 @@ export interface DailySalesReport {
   categoryId: string;
   categoryName: string;
   userId: string;
+  userName: string;
   salesCount: number;
   qtySold: number;
   grossTotal: number;
@@ -65,4 +66,11 @@ export interface TopProduct {
   productName: string;
   totalSold: number;
   totalRevenue: number;
+}
+
+export interface PaymentMethodReport {
+  method: string;
+  methodName: string;
+  transactions: number;
+  totalAmount: number;
 }

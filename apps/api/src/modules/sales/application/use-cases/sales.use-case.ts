@@ -28,6 +28,9 @@ export class SalesUseCases {
       cashierSessionId?: number;
       items: {
         productId: string;
+        productName: string;
+        productSku?: string;
+        barcode?: string;
         variantId?: string;
         qty: number;
         unitPrice: number;
@@ -46,6 +49,9 @@ export class SalesUseCases {
     const saleItems = dto.items.map((i) =>
       SaleItem.create({
         productId: i.productId,
+        productName: i.productName,
+        productSku: i.productSku,
+        barcode: i.barcode,
         variantId: i.variantId,
         qty: i.qty,
         unitPrice: i.unitPrice,
@@ -116,6 +122,7 @@ export class SalesUseCases {
       reason?: string;
       items: {
         productId: string;
+        productName?: string;
         variantId?: string;
         qty: number;
         unitPrice: number;
@@ -132,6 +139,7 @@ export class SalesUseCases {
     const returnItems = dto.items.map((i) =>
       SaleItem.create({
         productId: i.productId,
+        productName: i.productName ?? '',
         variantId: i.variantId,
         qty: i.qty,
         unitPrice: i.unitPrice,

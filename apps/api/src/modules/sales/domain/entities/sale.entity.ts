@@ -1,8 +1,11 @@
 export type SaleStatus = 'COMPLETED' | 'VOID' | 'RETURNED' | 'PARTIAL_RETURN';
-export type PaymentMethod = 'CASH' | 'CARD' | 'TRANSFER' | 'CREDIT' | 'MIXED';
+export type PaymentMethod = 'CASH' | 'CARD' | 'TRANSFER' | 'CREDIT' | 'YAPE' | 'PLIN' | 'MIXED';
 
 export interface SaleItemProps {
   productId: string;
+  productName: string;
+  productSku?: string;
+  barcode?: string;
   variantId?: string;
   qty: number;
   unitPrice: number;
@@ -20,6 +23,9 @@ export class SaleItem {
 
   static create(props: {
     productId: string;
+    productName: string;
+    productSku?: string;
+    barcode?: string;
     qty: number;
     unitPrice: number;
     taxRate?: number;
@@ -34,6 +40,9 @@ export class SaleItem {
     const total = round4(lineSubtotal + taxAmount - discount);
     return new SaleItem({
       productId: props.productId,
+      productName: props.productName,
+      productSku: props.productSku,
+      barcode: props.barcode,
       variantId: props.variantId,
       qty: props.qty,
       unitPrice: props.unitPrice,
@@ -49,6 +58,15 @@ export class SaleItem {
 
   get productId(): string {
     return this.props.productId;
+  }
+  get productName(): string {
+    return this.props.productName;
+  }
+  get productSku(): string | undefined {
+    return this.props.productSku;
+  }
+  get barcode(): string | undefined {
+    return this.props.barcode;
   }
   get variantId(): string | undefined {
     return this.props.variantId;
@@ -72,6 +90,9 @@ export class SaleItem {
   toDTO(): SaleItemDTO {
     return {
       productId: this.props.productId,
+      productName: this.props.productName,
+      productSku: this.props.productSku,
+      barcode: this.props.barcode,
       variantId: this.props.variantId,
       qty: this.props.qty,
       unitPrice: this.props.unitPrice,
@@ -84,6 +105,9 @@ export class SaleItem {
 
 export interface SaleItemDTO {
   productId: string;
+  productName: string;
+  productSku?: string;
+  barcode?: string;
   variantId?: string;
   qty: number;
   unitPrice: number;
@@ -220,7 +244,7 @@ export class Sale {
 
   get cashReceived(): number {
     return this.props.payments
-      .filter((p) => p.method === 'CASH' || p.method === 'MIXED')
+      .filter((p) => p.method === 'CASH' || p.method === 'YAPE' || p.method === 'PLIN' || p.method === 'MIXED')
       .reduce((s, p) => s + p.amount, 0);
   }
 
