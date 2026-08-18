@@ -7,6 +7,7 @@ export interface TenantInfo {
   schemaName: string;
   plan: string;
   status: string;
+  timezone: string;
 }
 
 /**

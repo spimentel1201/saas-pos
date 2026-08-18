@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsEnum, IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateBranchDto {
   @ApiProperty({ example: 'Sucursal Centro' })
@@ -81,6 +81,7 @@ export class UpdateTaxDto {
 
 export class UpdateSettingsDto {
   @ApiProperty({ description: 'Mapa de key-value para actualizar' })
+  @IsObject()
   settings!: Record<string, unknown>;
 }
 

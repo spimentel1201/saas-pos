@@ -45,7 +45,7 @@ import { UsersModule } from './modules/users/users.module.js';
     ConfigModule.forRoot({ isGlobal: true, cache: true }),
     EventEmitterModule.forRoot({ wildcard: true, delimiter: '.' }),
     ThrottlerModule.forRoot([
-      { name: 'short', ttl: 1000, limit: 5 },
+      { name: 'short', ttl: 1000, limit: 15 },
       { name: 'medium', ttl: 10_000, limit: 50 },
       { name: 'tenant', ttl: 60_000, limit: 500 },
     ]),

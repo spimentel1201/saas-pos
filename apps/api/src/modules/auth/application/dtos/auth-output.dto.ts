@@ -10,6 +10,12 @@ export class AuthTokensDto {
   @ApiProperty({ type: String, example: 'clxxxxxxxxxxxxxxxxxxxxx' })
   userId!: string;
 
+  @ApiProperty({ type: String, example: 'Juan Perez' })
+  userName!: string;
+
+  @ApiProperty({ type: String, example: 'admin@demo.com' })
+  userEmail!: string;
+
   @ApiProperty({ type: String, example: 'OWNER' })
   primaryRole!: string;
 

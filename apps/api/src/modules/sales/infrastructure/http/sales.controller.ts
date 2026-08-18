@@ -32,7 +32,8 @@ export class SalesController {
   @ApiOperation({ summary: 'Procesar checkout multi-pago' })
   @ApiBody({ type: CheckoutDto })
   async checkout(@CurrentUser() user: { sub: string }, @Body() dto: CheckoutDto) {
-    return this.salesUseCases.checkout(user.sub, dto);
+    const sale = await this.salesUseCases.checkout(user.sub, dto);
+    return sale.toDTO();
   }
 
   @Get(':id')

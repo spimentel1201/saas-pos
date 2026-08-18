@@ -347,7 +347,9 @@ _mv_cash_summary(branch_id, day, session_count, total_opening, total_expected, t
 
 - PWA: búsqueda rápida, escáner de código, atajos de teclado
 - Carrito, descuentos por ítem / generales
-- Múltiples pagos (efectivo, tarjeta, transferencia, crédito cliente)
+- Selector de cliente opcional (búsqueda por DNI/RUC/nombre/teléfono)
+- Venta anónima por defecto (sin cliente)
+- Múltiples pagos (efectivo, tarjeta, transferencia, crédito cliente, Yape, Plin)
 - Devoluciones y notas de crédito
 - Bloqueo de caja por sesión, venta suspendida / recall
 - Impresión de ticket vía WebUSB / Bluetooth (ESC/POS) o fallback PDF

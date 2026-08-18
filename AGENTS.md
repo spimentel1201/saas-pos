@@ -29,7 +29,31 @@ pnpm build             # turbo build (todo el workspace)
 
 NO uses `npm` ni `yarn` — el lockfile es `pnpm-lock.yaml`. No hay ESLint ni Prettier: el formato y lint son **Biome** (`biome.json` raíz). Trabajas en un solo package con `pnpm --filter @pos/<name> <script>`.
 
-## Reglas que el repo te ahorran de adivinar
+## Reglas de Frontend
+
+### Offline-First (PWA)
+- **IndexedDB (Dexie)** para datos offline: productos, últimos 7 días de ventas.
+- **Service Worker** cachea assets estáticos + API responses críticas.
+- **Cola de mutaciones** offline: cada operación (venta, ajuste stock) persiste local primero, sync cuando online.
+- **ULIDs en cliente** para evitar conflictos de ID.
+- **Server-wins stock**: conflictos de stock se resuelven del lado del servidor.
+- **UI indicators**: badge "Offline" en TopBar, colas pendientes visibles.
+
+### Responsive Design
+- **Mobile-first**: todas las vistas deben funcionar en 320px+.
+- **Breakpoints Tailwind**: `sm:640px`, `md:768px`, `lg:1024px`, `xl:1280px`.
+- **POS**: 3 columnas desktop, 1 columna mobile (carrito como bottom sheet).
+- **Sidebar**: colapsable en tablet, drawer en mobile.
+- **Tables**: scroll horizontal en mobile, cards alternativas.
+- **Touch targets**: mínimo 44x44px para botones interactivos.
+- **Fonts responsivos**: usar `clamp()` para tipografía, no fija.
+
+### API Client
+- `src/lib/api.ts`: fetch wrapper con JWT auto-refresh, tenant header, error handling.
+- `src/hooks/use-auth.ts`: hooks para login, signup, logout, user info.
+- `src/hooks/queries/*.ts`: un hook por módulo (useProducts, useCategories, etc.).
+- **Query keys**: `['module', 'entity', params?]` para invalidación granular.
+- **Stale time**: 30s para datos transaccionales, 5min para catálogos.
 
 - **No use stored procedures.** Ver `PLAN-MVP-POS-SAAS.md` §9. Para reportes pesados usa materialized views (ver `§11` y `apps/api/prisma/tenants/template.sql`).
 - **No uses Prisma client directamente fuera de `infrastructure/repositories/`.** Inyecta siempre un `*Repository` desde `application/`.

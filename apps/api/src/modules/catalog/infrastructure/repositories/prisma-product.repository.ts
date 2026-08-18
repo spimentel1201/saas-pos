@@ -25,6 +25,7 @@ export class PrismaProductRepository implements ProductRepositoryPort {
         dto.id,
       );
       if (existing.length > 0) {
+        const primaryImage = dto.images[0];
         await tx.$executeRawUnsafe(
           `UPDATE products SET name = $1, description = $2, sku = $3, barcode = $4, category_id = $5,
            price = $6, cost = $7, type = $8, track_stock = $9, is_active = $10,
@@ -40,15 +41,16 @@ export class PrismaProductRepository implements ProductRepositoryPort {
           dto.type,
           dto.trackStock,
           dto.status === 'ACTIVE',
-          null,
-          null,
+          primaryImage?.publicId ?? null,
+          primaryImage?.url ?? null,
           dto.id,
         );
       } else {
+        const primaryImage = dto.images[0];
         await tx.$executeRawUnsafe(
           `INSERT INTO products (id, sku, barcode, name, description, category_id,
-           cost, price, type, track_stock, is_active, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())`,
+           cost, price, type, track_stock, is_active, image_public_id, image_url, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())`,
           dto.id,
           dto.sku,
           dto.barcode ?? null,
@@ -60,7 +62,27 @@ export class PrismaProductRepository implements ProductRepositoryPort {
           dto.type,
           dto.trackStock,
           dto.status === 'ACTIVE',
+          primaryImage?.publicId ?? null,
+          primaryImage?.url ?? null,
         );
+
+        if (dto.trackStock && dto.stock > 0) {
+          const branches = await tx.$queryRawUnsafe<{ code: string }[]>(
+            'SELECT code FROM branches WHERE active = true',
+          );
+          for (const branch of branches) {
+            await tx.$executeRawUnsafe(
+              `INSERT INTO inventory_stocks (branch_code, product_id, qty, reserved, min_qty, max_qty, avg_cost, version, updated_at)
+               VALUES ($1, $2, $3, 0, $4, $5, 0, 1, NOW())
+               ON CONFLICT (branch_code, product_id) DO NOTHING`,
+              branch.code,
+              dto.id,
+              dto.stock,
+              dto.minStock ?? 0,
+              dto.maxStock ?? 0,
+            );
+          }
+        }
       }
       return product;
     });
@@ -70,9 +92,16 @@ export class PrismaProductRepository implements ProductRepositoryPort {
     return this.tenantPrisma.withTenant(async (tx) => {
       // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       const rows = await tx.$queryRawUnsafe<any[]>(
-        `SELECT id, sku, barcode, name, description, category_id, cost, price, type,
-         track_stock, is_active, image_public_id, image_url, created_at, updated_at
-         FROM products WHERE id = $1`,
+        `SELECT p.id, p.sku, p.barcode, p.name, p.description, p.category_id, p.cost, p.price, p.type,
+         p.track_stock, p.is_active, p.image_public_id, p.image_url, p.created_at, p.updated_at,
+         coalesce(sum(ist.qty), 0) as stock,
+         coalesce(max(ist.min_qty), 0) as min_stock,
+         coalesce(max(ist.max_qty), 0) as max_stock
+         FROM products p
+         LEFT JOIN inventory_stocks ist ON ist.product_id = p.id
+         WHERE p.id = $1
+         GROUP BY p.id, p.sku, p.barcode, p.name, p.description, p.category_id, p.cost, p.price, p.type,
+                  p.track_stock, p.is_active, p.image_public_id, p.image_url, p.created_at, p.updated_at`,
         id,
       );
       return rows.length > 0 ? this.mapToDomain(rows[0]) : null;
@@ -83,9 +112,16 @@ export class PrismaProductRepository implements ProductRepositoryPort {
     return this.tenantPrisma.withTenant(async (tx) => {
       // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       const rows = await tx.$queryRawUnsafe<any[]>(
-        `SELECT id, sku, barcode, name, description, category_id, cost, price, type,
-         track_stock, is_active, image_public_id, image_url, created_at, updated_at
-         FROM products WHERE sku = $1`,
+        `SELECT p.id, p.sku, p.barcode, p.name, p.description, p.category_id, p.cost, p.price, p.type,
+         p.track_stock, p.is_active, p.image_public_id, p.image_url, p.created_at, p.updated_at,
+         coalesce(sum(ist.qty), 0) as stock,
+         coalesce(max(ist.min_qty), 0) as min_stock,
+         coalesce(max(ist.max_qty), 0) as max_stock
+         FROM products p
+         LEFT JOIN inventory_stocks ist ON ist.product_id = p.id
+         WHERE p.sku = $1
+         GROUP BY p.id, p.sku, p.barcode, p.name, p.description, p.category_id, p.cost, p.price, p.type,
+                  p.track_stock, p.is_active, p.image_public_id, p.image_url, p.created_at, p.updated_at`,
         sku,
       );
       return rows.length > 0 ? this.mapToDomain(rows[0]) : null;
@@ -96,9 +132,16 @@ export class PrismaProductRepository implements ProductRepositoryPort {
     return this.tenantPrisma.withTenant(async (tx) => {
       // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       const rows = await tx.$queryRawUnsafe<any[]>(
-        `SELECT id, sku, barcode, name, description, category_id, cost, price, type,
-         track_stock, is_active, image_public_id, image_url, created_at, updated_at
-         FROM products WHERE barcode = $1`,
+        `SELECT p.id, p.sku, p.barcode, p.name, p.description, p.category_id, p.cost, p.price, p.type,
+         p.track_stock, p.is_active, p.image_public_id, p.image_url, p.created_at, p.updated_at,
+         coalesce(sum(ist.qty), 0) as stock,
+         coalesce(max(ist.min_qty), 0) as min_stock,
+         coalesce(max(ist.max_qty), 0) as max_stock
+         FROM products p
+         LEFT JOIN inventory_stocks ist ON ist.product_id = p.id
+         WHERE p.barcode = $1
+         GROUP BY p.id, p.sku, p.barcode, p.name, p.description, p.category_id, p.cost, p.price, p.type,
+                  p.track_stock, p.is_active, p.image_public_id, p.image_url, p.created_at, p.updated_at`,
         barcode,
       );
       return rows.length > 0 ? this.mapToDomain(rows[0]) : null;
@@ -111,9 +154,16 @@ export class PrismaProductRepository implements ProductRepositoryPort {
       const placeholders = ids.map((_, i) => `$${i + 1}`).join(',');
       // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       const rows = await tx.$queryRawUnsafe<any[]>(
-        `SELECT id, sku, barcode, name, description, category_id, cost, price, type,
-         track_stock, is_active, image_public_id, image_url, created_at, updated_at
-         FROM products WHERE id IN (${placeholders})`,
+        `SELECT p.id, p.sku, p.barcode, p.name, p.description, p.category_id, p.cost, p.price, p.type,
+         p.track_stock, p.is_active, p.image_public_id, p.image_url, p.created_at, p.updated_at,
+         coalesce(sum(ist.qty), 0) as stock,
+         coalesce(max(ist.min_qty), 0) as min_stock,
+         coalesce(max(ist.max_qty), 0) as max_stock
+         FROM products p
+         LEFT JOIN inventory_stocks ist ON ist.product_id = p.id
+         WHERE p.id IN (${placeholders})
+         GROUP BY p.id, p.sku, p.barcode, p.name, p.description, p.category_id, p.cost, p.price, p.type,
+                  p.track_stock, p.is_active, p.image_public_id, p.image_url, p.created_at, p.updated_at`,
         ...ids,
       );
       // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
@@ -157,6 +207,18 @@ export class PrismaProductRepository implements ProductRepositoryPort {
       if (filter.hasStock) {
         conditions.push('track_stock = true');
       }
+      if (filter.status) {
+        if (filter.status === 'ACTIVE') {
+          conditions.push('is_active = true');
+        } else if (filter.status === 'INACTIVE') {
+          conditions.push('is_active = false');
+        }
+      }
+      if (filter.type) {
+        conditions.push(`type = $${paramIdx}`);
+        params.push(filter.type);
+        paramIdx++;
+      }
 
       const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
       const page = filter.page ?? 1;
@@ -173,9 +235,17 @@ export class PrismaProductRepository implements ProductRepositoryPort {
 
       // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       const rows = await tx.$queryRawUnsafe<any[]>(
-        `SELECT id, sku, barcode, name, description, category_id, cost, price, type,
-         track_stock, is_active, image_public_id, image_url, created_at, updated_at
-         FROM products ${where} ORDER BY "${sortBy}" ${sortOrder} LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`,
+        `SELECT p.id, p.sku, p.barcode, p.name, p.description, p.category_id, p.cost, p.price, p.type,
+         p.track_stock, p.is_active, p.image_public_id, p.image_url, p.created_at, p.updated_at,
+         coalesce(sum(ist.qty), 0) as stock,
+         coalesce(max(ist.min_qty), 0) as min_stock,
+         coalesce(max(ist.max_qty), 0) as max_stock
+         FROM products p
+         LEFT JOIN inventory_stocks ist ON ist.product_id = p.id
+         ${where}
+         GROUP BY p.id, p.sku, p.barcode, p.name, p.description, p.category_id, p.cost, p.price, p.type,
+                  p.track_stock, p.is_active, p.image_public_id, p.image_url, p.created_at, p.updated_at
+         ORDER BY p."${sortBy}" ${sortOrder} LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`,
         ...params,
         limit,
         offset,
@@ -203,9 +273,18 @@ export class PrismaProductRepository implements ProductRepositoryPort {
     return this.tenantPrisma.withTenant(async (tx) => {
       // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       const rows = await tx.$queryRawUnsafe<any[]>(
-        `SELECT id, sku, barcode, name, description, category_id, cost, price, type,
-         track_stock, is_active, image_public_id, image_url, created_at, updated_at
-         FROM products WHERE track_stock = true`,
+        `SELECT p.id, p.sku, p.barcode, p.name, p.description, p.category_id, p.cost, p.price, p.type,
+         p.track_stock, p.is_active, p.image_public_id, p.image_url, p.created_at, p.updated_at,
+         coalesce(sum(ist.qty), 0) as stock,
+         coalesce(max(ist.min_qty), 0) as min_stock,
+         coalesce(max(ist.max_qty), 0) as max_stock
+         FROM products p
+         LEFT JOIN inventory_stocks ist ON ist.product_id = p.id
+         WHERE p.track_stock = true AND p.is_active = true
+         GROUP BY p.id, p.sku, p.barcode, p.name, p.description, p.category_id, p.cost, p.price, p.type,
+                  p.track_stock, p.is_active, p.image_public_id, p.image_url, p.created_at, p.updated_at
+         HAVING coalesce(sum(ist.qty), 0) <= coalesce(max(ist.min_qty), 0)
+         ORDER BY stock ASC`,
       );
       // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries
       return rows.map((r: any) => this.mapToDomain(r));
@@ -259,9 +338,9 @@ export class PrismaProductRepository implements ProductRepositoryPort {
       cost: Number(row.cost),
       taxRate: 0,
       trackStock: row.track_stock,
-      stock: 0,
-      minStock: 0,
-      maxStock: undefined,
+      stock: Number(row.stock ?? 0),
+      minStock: Number(row.min_stock ?? 0),
+      maxStock: row.max_stock ? Number(row.max_stock) : undefined,
       variants: [],
       images: row.image_url
         ? [{ publicId: row.image_public_id ?? '', url: row.image_url, isPrimary: true }]

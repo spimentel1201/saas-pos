@@ -18,9 +18,11 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
+    "db:migrate:product-name": "tsx prisma/tenants/migrate-product-name.ts",
     "clean": "rimraf dist .turbo coverage"
   },
   "dependencies": {
+    "@fastify/cors": "^11.3.0",
     "@fastify/multipart": "^9.0.1",
     "@fastify/static": "^9.3.0",
     "@nestjs/bullmq": "^11.0.0",

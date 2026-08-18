@@ -23,6 +23,8 @@ export enum PaymentMethod {
   CARD = 'CARD',
   TRANSFER = 'TRANSFER',
   CREDIT = 'CREDIT',
+  YAPE = 'YAPE',
+  PLIN = 'PLIN',
   MIXED = 'MIXED',
 }
 

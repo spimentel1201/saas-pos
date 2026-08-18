@@ -1,4 +1,4 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ulid } from 'ulid';
 import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.service.js';
 import type { UserRepository } from '../../domain/repositories/user.repository.js';
@@ -16,6 +16,8 @@ import type { TokenServicePort } from '../ports/token-service.port.js';
  */
 @Injectable()
 export class LoginUseCase {
+  private readonly logger = new Logger(LoginUseCase.name);
+
   constructor(
     @Inject(USER_REPO) private readonly users: UserRepository,
     @Inject(PWD_HASHER) private readonly hasher: PasswordHasherPort,
@@ -26,7 +28,13 @@ export class LoginUseCase {
   async execute(
     dto: LoginDto,
   ): Promise<AuthTokensDto & { tenants: Array<{ slug: string; role: string; name: string }> }> {
-    const user = await this.users.findByEmail(dto.email.toLowerCase());
+    let user;
+    try {
+      user = await this.users.findByEmail(dto.email.toLowerCase());
+    } catch (error) {
+      this.logger.error('Error de conexion a base de datos', (error as Error).stack);
+      throw new UnauthorizedException('Servicio no disponible, intente nuevamente');
+    }
     if (!user) {
       throw new UnauthorizedException('Credenciales invalidas');
     }
@@ -62,6 +70,8 @@ export class LoginUseCase {
       accessToken,
       refreshToken,
       userId: user.id,
+      userName: user.name ?? '',
+      userEmail: user.email,
       primaryRole: primary?.role ?? 'CASHIER',
       tenantSlug: primary?.tenant?.slug ?? '',
       tenants: memberships.map((m: (typeof memberships)[number]) => ({

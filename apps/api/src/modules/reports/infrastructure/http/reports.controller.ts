@@ -7,6 +7,7 @@ import { CategorySalesUseCases } from '../../application/use-cases/category-sale
 import { DailySalesUseCases } from '../../application/use-cases/daily-sales.use-case.js';
 import { DashboardUseCases } from '../../application/use-cases/dashboard.use-case.js';
 import { InventoryValuationUseCases } from '../../application/use-cases/inventory-valuation.use-case.js';
+import { PaymentMethodSalesUseCases } from '../../application/use-cases/payment-method-sales.use-case.js';
 import { ProductSalesUseCases } from '../../application/use-cases/product-sales.use-case.js';
 import {
   cashReportTemplate,
@@ -25,6 +26,7 @@ export class ReportsController {
     private readonly dailySalesUseCases: DailySalesUseCases,
     private readonly productSalesUseCases: ProductSalesUseCases,
     private readonly categorySalesUseCases: CategorySalesUseCases,
+    private readonly paymentMethodSalesUseCases: PaymentMethodSalesUseCases,
     private readonly inventoryValuationUseCases: InventoryValuationUseCases,
     private readonly cashReportUseCases: CashReportUseCases,
   ) {}
@@ -87,6 +89,19 @@ export class ReportsController {
     @Query('to') to?: string,
   ) {
     return this.categorySalesUseCases.execute({ branchId, from, to });
+  }
+
+  @Get('sales/by-payment')
+  @ApiOperation({ summary: 'Ventas por metodo de pago' })
+  @ApiQuery({ name: 'branchId', required: false })
+  @ApiQuery({ name: 'from', required: false })
+  @ApiQuery({ name: 'to', required: false })
+  async getSalesByPayment(
+    @Query('branchId') branchId?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.paymentMethodSalesUseCases.execute({ branchId, from, to });
   }
 
   @Get('inventory/valuation')

@@ -10,6 +10,7 @@ import type {
   DailySalesReport,
   HourlyHeatmap,
   InventoryValuationReport,
+  PaymentMethodReport,
   TopProduct,
 } from '../../domain/entities/report.entities.js';
 
@@ -41,7 +42,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
 
       const isToday = !filter.from && !filter.to;
       if (isToday) {
-        conditions.push('s.created_at >= CURRENT_DATE');
+        conditions.push(`s.created_at >= date_trunc('day', now())`);
       }
 
       const finalWhere = `WHERE ${conditions.join(' AND ')}`;
@@ -52,7 +53,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
                 date_trunc('day', s.created_at) as day,
                 si.product_id, p.name as product_name,
                 p.category_id, coalesce(cat.name, 'Sin categoria') as category_name,
-                s.user_id,
+                s.user_id, coalesce(u.name, u.email, 'Desconocido') as user_name,
                 count(*) as sales_count,
                 sum(si.qty) as qty_sold,
                 sum(si.total) as gross_total,
@@ -62,9 +63,10 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
          JOIN sale_items si ON si.sale_id = s.id
          JOIN products p ON p.id = si.product_id
          LEFT JOIN categories cat ON cat.id = p.category_id
+         LEFT JOIN public."User" u ON u.id = s.user_id
          ${finalWhere}
          GROUP BY s.branch_code, b.name, date_trunc('day', s.created_at),
-                  si.product_id, p.name, p.category_id, cat.name, s.user_id
+                  si.product_id, p.name, p.category_id, cat.name, s.user_id, u.name, u.email
          ORDER BY day DESC, gross_total DESC`,
         ...params,
       );
@@ -78,6 +80,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
         categoryId: r.category_id ?? '',
         categoryName: r.category_name,
         userId: r.user_id,
+        userName: r.user_name,
         salesCount: Number(r.sales_count),
         qtySold: Number(r.qty_sold),
         grossTotal: Number(r.gross_total),
@@ -270,6 +273,50 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
     });
   }
 
+  async getPaymentMethodSales(filter: ReportFilter): Promise<PaymentMethodReport[]> {
+    return this.tenantPrisma.withTenant(async (tx) => {
+      const conditions: string[] = ["s.status = 'COMPLETED'"];
+      // biome-ignore lint/suspicious/noExplicitAny: dynamic params
+      const params: any[] = [];
+      let idx = 1;
+
+      if (filter.branchId) {
+        conditions.push(`s.branch_code = $${idx++}`);
+        params.push(filter.branchId);
+      }
+      if (filter.from) {
+        conditions.push(`s.created_at >= $${idx++}`);
+        params.push(filter.from);
+      }
+      if (filter.to) {
+        conditions.push(`s.created_at <= $${idx++}`);
+        params.push(filter.to);
+      }
+
+      const where = `WHERE ${conditions.join(' AND ')}`;
+
+      // biome-ignore lint/suspicious/noExplicitAny: raw SQL query
+      const rows = await tx.$queryRawUnsafe<any[]>(
+        `SELECT sp.method,
+                count(DISTINCT s.id) as transactions,
+                sum(sp.amount) as total_amount
+         FROM sales s
+         JOIN sale_payments sp ON sp.sale_id = s.id
+         ${where}
+         GROUP BY sp.method
+         ORDER BY total_amount DESC`,
+        ...params,
+      );
+
+      return rows.map((r) => ({
+        method: r.method,
+        methodName: r.method,
+        transactions: Number(r.transactions),
+        totalAmount: Number(r.total_amount),
+      }));
+    });
+  }
+
   async getHourlyHeatmap(filter: ReportFilter): Promise<HourlyHeatmap[]> {
     return this.tenantPrisma.withTenant(async (tx) => {
       const conditions: string[] = ["s.status = 'COMPLETED'"];
@@ -316,9 +363,12 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
     return this.tenantPrisma.withTenant(async (tx) => {
       const rows = await tx.$queryRawUnsafe<{ count: number }[]>(
         `SELECT count(*) as count
-         FROM inventory_stocks ist
-         JOIN products p ON p.id = ist.product_id
-         WHERE p.track_stock = true AND p.is_active = true AND ist.qty <= ist.min_qty AND ist.min_qty > 0`,
+         FROM products p
+         WHERE p.track_stock = true AND p.is_active = true
+           AND NOT EXISTS (
+             SELECT 1 FROM inventory_stocks ist
+             WHERE ist.product_id = p.id AND ist.qty > 0
+           )`,
       );
       return Number(rows[0]?.count ?? 0);
     });
@@ -329,7 +379,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
       const rows = await tx.$queryRawUnsafe<{ total: number }[]>(
         `SELECT coalesce(sum(total), 0) as total
          FROM sales
-         WHERE status = 'COMPLETED' AND created_at >= CURRENT_DATE`,
+         WHERE status = 'COMPLETED' AND created_at >= date_trunc('day', now())`,
       );
       return Number(rows[0]?.total ?? 0);
     });
@@ -340,7 +390,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
       const rows = await tx.$queryRawUnsafe<{ count: number }[]>(
         `SELECT count(*) as count
          FROM sales
-         WHERE status = 'COMPLETED' AND created_at >= CURRENT_DATE`,
+         WHERE status = 'COMPLETED' AND created_at >= date_trunc('day', now())`,
       );
       return Number(rows[0]?.count ?? 0);
     });
@@ -349,7 +399,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
   async getActiveBranchesCount(): Promise<number> {
     return this.tenantPrisma.withTenant(async (tx) => {
       const rows = await tx.$queryRawUnsafe<{ count: number }[]>(
-        `SELECT count(*) as count FROM branches WHERE active = true`,
+        'SELECT count(*) as count FROM branches WHERE active = true',
       );
       return Number(rows[0]?.count ?? 0);
     });
@@ -358,7 +408,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
   async getActiveCustomersCount(): Promise<number> {
     return this.tenantPrisma.withTenant(async (tx) => {
       const rows = await tx.$queryRawUnsafe<{ count: number }[]>(
-        `SELECT count(*) as count FROM customers WHERE active = true`,
+        'SELECT count(*) as count FROM customers WHERE active = true',
       );
       return Number(rows[0]?.count ?? 0);
     });

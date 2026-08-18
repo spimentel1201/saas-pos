@@ -64,7 +64,7 @@ export class CashUseCases {
 
   async closeSession(
     id: number,
-    userId: string,
+    user: { sub: string; role?: string },
     dto: {
       countedBalance: number;
       notes?: string;
@@ -72,7 +72,9 @@ export class CashUseCases {
   ): Promise<CashSessionDTO> {
     const session = await this.sessionRepo.findById(id);
     if (!session) throw new NotFoundException('Sesión no encontrada');
-    if (session.userId !== userId) {
+
+    const isOwnerOrManager = user.role === 'OWNER' || user.role === 'MANAGER';
+    if (session.userId !== user.sub && !isOwnerOrManager) {
       throw new BadRequestException('Solo el usuario que abrió la sesión puede cerrarla');
     }
     if (session.status !== 'OPEN') {
@@ -93,7 +95,7 @@ export class CashUseCases {
 
   async addMovement(
     id: number,
-    userId: string,
+    user: { sub: string; role?: string },
     dto: {
       type: CashMovementType;
       amount: number;
@@ -102,7 +104,9 @@ export class CashUseCases {
   ): Promise<CashMovementDTO> {
     const session = await this.sessionRepo.findById(id);
     if (!session) throw new NotFoundException('Sesión no encontrada');
-    if (session.userId !== userId) {
+
+    const isOwnerOrManager = user.role === 'OWNER' || user.role === 'MANAGER';
+    if (session.userId !== user.sub && !isOwnerOrManager) {
       throw new BadRequestException('Solo el usuario de la sesión puede agregar movimientos');
     }
     if (session.status !== 'OPEN') {

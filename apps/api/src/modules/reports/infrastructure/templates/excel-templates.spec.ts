@@ -25,6 +25,7 @@ describe('Excel Templates', () => {
           categoryId: 'cat_1',
           categoryName: 'Categoria 1',
           userId: 'user_1',
+          userName: 'Juan Perez',
           salesCount: 10,
           qtySold: 50,
           grossTotal: 1500,
