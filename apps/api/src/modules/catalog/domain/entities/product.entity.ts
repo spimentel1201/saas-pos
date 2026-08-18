@@ -94,8 +94,14 @@ export class Product {
     minStock?: number;
     maxStock?: number;
     costPerUnit?: number;
+    imageUrl?: string;
+    imagePublicId?: string;
   }): Product {
     const now = new Date();
+    const images: ProductImage[] = [];
+    if (props.imageUrl && props.imagePublicId) {
+      images.push({ publicId: props.imagePublicId, url: props.imageUrl, isPrimary: true });
+    }
     return new Product({
       id: ProductId.generate(),
       tenantId: props.tenantId,
@@ -105,7 +111,7 @@ export class Product {
       sku: props.sku.trim().toUpperCase(),
       barcode: props.barcode?.trim(),
       type: props.type ?? 'GOOD',
-      status: 'DRAFT',
+      status: 'ACTIVE',
       price: props.price,
       cost: props.cost ?? 0,
       taxRate: props.taxRate ?? 0,
@@ -114,7 +120,7 @@ export class Product {
       minStock: props.minStock ?? 0,
       maxStock: props.maxStock,
       variants: [],
-      images: [],
+      images,
       tags: [],
       createdAt: now,
       updatedAt: now,
@@ -226,6 +232,11 @@ export class Product {
     this.touch();
   }
 
+  updateType(type: ProductType): void {
+    this.props.type = type;
+    this.touch();
+  }
+
   updatePrice(price: number): void {
     if (price < 0) throw new Error('El precio no puede ser negativo');
     this.props.price = price;
@@ -322,6 +333,15 @@ export class Product {
     const firstImage = this.props.images[0];
     if (firstImage && !firstImage.isPrimary) {
       firstImage.isPrimary = true;
+    }
+    this.touch();
+  }
+
+  updateImage(publicId: string | null, url: string | null): void {
+    if (!publicId || !url) {
+      this.props.images = [];
+    } else {
+      this.props.images = [{ publicId, url, isPrimary: true }];
     }
     this.touch();
   }

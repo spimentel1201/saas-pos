@@ -9,6 +9,7 @@ import {
   IsString,
   Max,
   Min,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreateProductDto {
@@ -92,6 +93,18 @@ export class CreateProductDto {
   @IsArray()
   @IsString({ each: true })
   tags?: string[];
+
+  @ApiPropertyOptional({ description: 'URL de la imagen del producto' })
+  @ValidateIf((o) => o.imageUrl !== null)
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Public ID de la imagen en Cloudinary' })
+  @ValidateIf((o) => o.imagePublicId !== null)
+  @IsOptional()
+  @IsString()
+  imagePublicId?: string;
 }
 
 export class UpdateProductDto {
@@ -104,6 +117,16 @@ export class UpdateProductDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @ApiPropertyOptional({ example: 'CC-500' })
+  @IsOptional()
+  @IsString()
+  sku?: string;
+
+  @ApiPropertyOptional({ example: '7791234567890' })
+  @IsOptional()
+  @IsString()
+  barcode?: string;
 
   @ApiPropertyOptional({ example: 'cat_456' })
   @IsOptional()
@@ -132,6 +155,11 @@ export class UpdateProductDto {
   @Max(1)
   taxRate?: number;
 
+  @ApiPropertyOptional({ example: 'GOOD', enum: ['GOOD', 'SERVICE', 'BUNDLE'] })
+  @IsOptional()
+  @IsEnum(['GOOD', 'SERVICE', 'BUNDLE'])
+  type?: 'GOOD' | 'SERVICE' | 'BUNDLE';
+
   @ApiPropertyOptional({ example: true })
   @IsOptional()
   @IsBoolean()
@@ -156,6 +184,18 @@ export class UpdateProductDto {
   @IsArray()
   @IsString({ each: true })
   tags?: string[];
+
+  @ApiPropertyOptional({ description: 'URL de la imagen del producto' })
+  @ValidateIf((o) => o.imageUrl !== null)
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Public ID de la imagen en Cloudinary' })
+  @ValidateIf((o) => o.imagePublicId !== null)
+  @IsOptional()
+  @IsString()
+  imagePublicId?: string;
 }
 
 export class CreateCategoryDto {

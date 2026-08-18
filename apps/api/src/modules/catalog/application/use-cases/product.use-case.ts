@@ -23,19 +23,25 @@ interface CreateProductInput {
   initialStock?: number;
   minStock?: number;
   maxStock?: number;
+  imageUrl?: string;
+  imagePublicId?: string;
 }
 
 interface UpdateProductInput {
   name?: string;
   description?: string;
+  sku?: string;
+  barcode?: string;
+  type?: string;
   price?: number;
   cost?: number;
-  barcode?: string;
   categoryId?: string;
   trackStock?: boolean;
   minStock?: number;
   maxStock?: number;
   taxRate?: number;
+  imageUrl?: string | null;
+  imagePublicId?: string | null;
 }
 
 interface SearchFilters {
@@ -98,6 +104,8 @@ export class ProductUseCases {
       initialStock: dto.initialStock,
       minStock: dto.minStock ?? 0,
       maxStock: dto.maxStock,
+      imageUrl: dto.imageUrl,
+      imagePublicId: dto.imagePublicId,
     });
 
     return (await this.productRepo.save(product)).toDTO();
@@ -127,9 +135,11 @@ export class ProductUseCases {
 
     if (dto.name) product.updateName(dto.name);
     if (dto.description !== undefined) product.updateDescription(dto.description);
+    if (dto.sku !== undefined) product.updateSku(dto.sku);
     if (dto.price !== undefined) product.updatePrice(dto.price);
     if (dto.cost !== undefined) product.updateCost(dto.cost);
     if (dto.barcode !== undefined) product.updateBarcode(dto.barcode);
+    if (dto.type !== undefined) product.updateType(dto.type as ProductType);
     if (dto.categoryId !== undefined) product.updateCategory(dto.categoryId);
     if (dto.trackStock !== undefined || dto.minStock !== undefined || dto.maxStock !== undefined) {
       product.updateStockSettings(
@@ -141,6 +151,9 @@ export class ProductUseCases {
     if (dto.taxRate !== undefined) product.updateTaxRate(dto.taxRate);
     if (dto.minStock !== undefined) product.updateMinStock(dto.minStock);
     if (dto.maxStock !== undefined) product.updateMaxStock(dto.maxStock);
+    if (dto.imageUrl !== undefined || dto.imagePublicId !== undefined) {
+      product.updateImage(dto.imagePublicId ?? null, dto.imageUrl ?? null);
+    }
 
     return (await this.productRepo.save(product)).toDTO();
   }
