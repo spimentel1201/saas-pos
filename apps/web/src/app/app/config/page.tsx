@@ -262,8 +262,11 @@ function SettingsTab() {
               58mm: impresoras termicas estandar. 80mm: mas legible, mas espacio.
             </p>
           </div>
-          <Button onClick={handleSave} disabled={updateTicket.isPending || updateSettings.isPending}>
-            {(updateTicket.isPending || updateSettings.isPending) ? 'Guardando...' : 'Guardar'}
+          <Button
+            onClick={handleSave}
+            disabled={updateTicket.isPending || updateSettings.isPending}
+          >
+            {updateTicket.isPending || updateSettings.isPending ? 'Guardando...' : 'Guardar'}
           </Button>
         </CardContent>
       </Card>

@@ -1,5 +1,12 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentTenant } from '../../../../shared/infrastructure/http/current-tenant.decorator.js';
 import { TenantRequired } from '../../../../shared/infrastructure/multi-tenant/tenant-required.decorator.js';
 import { NotificationUseCases } from '../../application/use-cases/notification.use-case.js';
@@ -15,7 +22,16 @@ export class NotificationController {
   @TenantRequired()
   @HttpCode(201)
   @ApiOperation({ summary: 'Enviar email transaccional' })
-  @ApiBody({ schema: { properties: { to: { type: 'string' }, subject: { type: 'string' }, html: { type: 'string' }, userId: { type: 'string' } } } })
+  @ApiBody({
+    schema: {
+      properties: {
+        to: { type: 'string' },
+        subject: { type: 'string' },
+        html: { type: 'string' },
+        userId: { type: 'string' },
+      },
+    },
+  })
   @ApiResponse({ status: 201, description: 'Email enviado' })
   async sendEmail(
     @CurrentTenant() tenantId: string,
@@ -39,7 +55,15 @@ export class NotificationController {
   @TenantRequired()
   @HttpCode(201)
   @ApiOperation({ summary: 'Enviar SMS' })
-  @ApiBody({ schema: { properties: { to: { type: 'string' }, message: { type: 'string' }, userId: { type: 'string' } } } })
+  @ApiBody({
+    schema: {
+      properties: {
+        to: { type: 'string' },
+        message: { type: 'string' },
+        userId: { type: 'string' },
+      },
+    },
+  })
   @ApiResponse({ status: 201, description: 'SMS enviado' })
   async sendSMS(
     @CurrentTenant() tenantId: string,
@@ -61,7 +85,16 @@ export class NotificationController {
   @TenantRequired()
   @HttpCode(201)
   @ApiOperation({ summary: 'Enviar notificación push' })
-  @ApiBody({ schema: { properties: { userId: { type: 'string' }, title: { type: 'string' }, body: { type: 'string' }, data: { type: 'object' } } } })
+  @ApiBody({
+    schema: {
+      properties: {
+        userId: { type: 'string' },
+        title: { type: 'string' },
+        body: { type: 'string' },
+        data: { type: 'object' },
+      },
+    },
+  })
   @ApiResponse({ status: 201, description: 'Push notification enviada' })
   async sendPushNotification(
     @CurrentTenant() tenantId: string,
@@ -121,7 +154,15 @@ export class NotificationController {
   @TenantRequired()
   @HttpCode(201)
   @ApiOperation({ summary: 'Enviar confirmación de venta' })
-  @ApiBody({ schema: { properties: { userId: { type: 'string' }, saleId: { type: 'string' }, total: { type: 'number' } } } })
+  @ApiBody({
+    schema: {
+      properties: {
+        userId: { type: 'string' },
+        saleId: { type: 'string' },
+        total: { type: 'number' },
+      },
+    },
+  })
   @ApiResponse({ status: 201, description: 'Confirmación enviada' })
   async sendSaleConfirmation(
     @CurrentTenant() tenantId: string,
@@ -143,7 +184,16 @@ export class NotificationController {
   @TenantRequired()
   @HttpCode(201)
   @ApiOperation({ summary: 'Enviar alerta de stock bajo' })
-  @ApiBody({ schema: { properties: { productId: { type: 'string' }, productName: { type: 'string' }, currentStock: { type: 'number' }, minStock: { type: 'number' } } } })
+  @ApiBody({
+    schema: {
+      properties: {
+        productId: { type: 'string' },
+        productName: { type: 'string' },
+        currentStock: { type: 'number' },
+        minStock: { type: 'number' },
+      },
+    },
+  })
   @ApiResponse({ status: 201, description: 'Alerta enviada' })
   async sendLowStockAlert(
     @CurrentTenant() tenantId: string,

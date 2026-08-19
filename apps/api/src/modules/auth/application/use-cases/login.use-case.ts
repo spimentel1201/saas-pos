@@ -28,7 +28,7 @@ export class LoginUseCase {
   async execute(
     dto: LoginDto,
   ): Promise<AuthTokensDto & { tenants: Array<{ slug: string; role: string; name: string }> }> {
-    let user;
+    let user: Awaited<ReturnType<typeof this.users.findByEmail>> | undefined;
     try {
       user = await this.users.findByEmail(dto.email.toLowerCase());
     } catch (error) {

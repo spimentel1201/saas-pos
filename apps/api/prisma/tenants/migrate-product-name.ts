@@ -45,7 +45,7 @@ async function main(): Promise<void> {
       console.log(`Migrando "${schema}"...`);
       await client.query(`SET search_path TO ${schema}`);
       await client.query(migrationSQL);
-      console.log(`  OK`);
+      console.log('  OK');
     }
 
     console.log('Migracion completada.');

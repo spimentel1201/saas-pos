@@ -57,13 +57,7 @@ const RECEIT_CSS = `
   }
 `;
 
-export function ReceiptPreview({
-  open,
-  onOpenChange,
-  config,
-  data,
-  onPrint,
-}: ReceiptPreviewProps) {
+export function ReceiptPreview({ open, onOpenChange, config, data, onPrint }: ReceiptPreviewProps) {
   const [width, setWidth] = useState<ReceiptWidth>(config.width);
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -113,7 +107,10 @@ export function ReceiptPreview({
 
         <Separator />
 
-        <div ref={previewRef} className="flex justify-center overflow-auto bg-gray-100 p-4 dark:bg-gray-800">
+        <div
+          ref={previewRef}
+          className="flex justify-center overflow-auto bg-gray-100 p-4 dark:bg-gray-800"
+        >
           <Receipt config={previewConfig} data={data} />
         </div>
 

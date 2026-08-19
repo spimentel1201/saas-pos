@@ -1,9 +1,8 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { UserUseCases } from './user.use-case.js';
-import type { UserRepositoryPort } from '../ports/user.repository.port.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TenantUserInfo } from '../../domain/entities/user-info.entity.js';
-import type { Role } from '../../../auth/domain/entities/user.entity.js';
+import type { UserRepositoryPort } from '../ports/user.repository.port.js';
+import { UserUseCases } from './user.use-case.js';
 
 describe('UserUseCases', () => {
   let userUseCases: UserUseCases;
@@ -66,9 +65,9 @@ describe('UserUseCases', () => {
     it('throws NotFoundException if user not found', async () => {
       vi.mocked(mockUserRepo.findByUserAndTenant).mockResolvedValue(null);
 
-      await expect(
-        userUseCases.getUserInTenant(mockUserId, mockTenantId),
-      ).rejects.toThrow(NotFoundException);
+      await expect(userUseCases.getUserInTenant(mockUserId, mockTenantId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -89,12 +88,7 @@ describe('UserUseCases', () => {
         role: 'MANAGER',
       });
 
-      const result = await userUseCases.updateRole(
-        mockTenantId,
-        mockUserId,
-        'MANAGER',
-        'ADMIN',
-      );
+      const result = await userUseCases.updateRole(mockTenantId, mockUserId, 'MANAGER', 'ADMIN');
 
       expect(result.role).toBe('MANAGER');
     });
@@ -147,10 +141,7 @@ describe('UserUseCases', () => {
 
       await userUseCases.removeFromTenant(mockTenantId, mockUserId, 'OWNER');
 
-      expect(mockUserRepo.removeFromTenant).toHaveBeenCalledWith(
-        mockUserId,
-        mockTenantId,
-      );
+      expect(mockUserRepo.removeFromTenant).toHaveBeenCalledWith(mockUserId, mockTenantId);
     });
 
     it('throws ForbiddenException if trying to remove OWNER', async () => {
@@ -209,11 +200,7 @@ describe('UserUseCases', () => {
 
       vi.mocked(mockUserRepo.inviteToTenant).mockResolvedValue(mockInvited);
 
-      const result = await userUseCases.invite(
-        mockTenantId,
-        'new@test.com',
-        'CASHIER',
-      );
+      const result = await userUseCases.invite(mockTenantId, 'new@test.com', 'CASHIER');
 
       expect(result.email).toBe('new@test.com');
       expect(result.role).toBe('CASHIER');

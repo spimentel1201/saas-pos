@@ -11,8 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useCreateTransfer } from '@/hooks/queries/use-inventory';
 import { useProducts } from '@/hooks/queries/use-catalog';
+import { useCreateTransfer } from '@/hooks/queries/use-inventory';
 import { ApiError } from '@/lib/api';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
@@ -53,7 +53,10 @@ export default function NewTransferPage() {
   const updateItem = (index: number, field: keyof TransferItemForm, value: string) => {
     const updated = items.map((item, i) => {
       if (i !== index) return item;
-      return { productId: field === 'productId' ? value : item.productId, qty: field === 'qty' ? value : item.qty };
+      return {
+        productId: field === 'productId' ? value : item.productId,
+        qty: field === 'qty' ? value : item.qty,
+      };
     });
     setItems(updated);
   };
@@ -146,9 +149,7 @@ export default function NewTransferPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  {errors.toBranch && (
-                    <p className="text-xs text-destructive">{errors.toBranch}</p>
-                  )}
+                  {errors.toBranch && <p className="text-xs text-destructive">{errors.toBranch}</p>}
                 </div>
               </div>
             </CardContent>

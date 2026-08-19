@@ -71,7 +71,7 @@ export async function searchCachedProducts(query: string): Promise<OfflineProduc
     .filter((p) => {
       if (p.name.toLowerCase().includes(q)) return true;
       if (p.sku.toLowerCase().includes(q)) return true;
-      if (p.barcode && p.barcode.includes(q)) return true;
+      if (p.barcode?.includes(q)) return true;
       return false;
     })
     .toArray();

@@ -14,8 +14,8 @@ import {
 } from '@/components/ui/select';
 import { useCreateProduct } from '@/hooks/queries/use-catalog';
 import { useCategories } from '@/hooks/queries/use-categories';
-import { useAuthStore } from '@/lib/store';
 import { ApiError } from '@/lib/api';
+import { useAuthStore } from '@/lib/store';
 import { ArrowLeft, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';

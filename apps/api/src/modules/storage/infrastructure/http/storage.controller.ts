@@ -5,12 +5,19 @@ import {
   Delete,
   Get,
   HttpCode,
-  HttpStatus,
   Param,
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentTenant } from '../../../../shared/infrastructure/http/current-tenant.decorator.js';
 import { TenantRequired } from '../../../../shared/infrastructure/multi-tenant/tenant-required.decorator.js';
 import { StorageUseCases } from '../../application/use-cases/storage.use-case.js';
@@ -26,7 +33,21 @@ export class StorageController {
   @TenantRequired()
   @HttpCode(201)
   @ApiOperation({ summary: 'Subir archivo' })
-  @ApiBody({ schema: { properties: { file: { type: 'object', properties: { buffer: { type: 'string' }, originalName: { type: 'string' }, mimeType: { type: 'string' } } }, category: { type: 'string', enum: Object.values(FileCategory) } } } })
+  @ApiBody({
+    schema: {
+      properties: {
+        file: {
+          type: 'object',
+          properties: {
+            buffer: { type: 'string' },
+            originalName: { type: 'string' },
+            mimeType: { type: 'string' },
+          },
+        },
+        category: { type: 'string', enum: Object.values(FileCategory) },
+      },
+    },
+  })
   @ApiResponse({ status: 201, description: 'Archivo subido' })
   async uploadFile(
     @CurrentTenant() tenantId: string,
@@ -61,7 +82,20 @@ export class StorageController {
   @HttpCode(201)
   @ApiOperation({ summary: 'Subir imagen de producto' })
   @ApiParam({ name: 'productId', description: 'ID del producto' })
-  @ApiBody({ schema: { properties: { file: { type: 'object', properties: { buffer: { type: 'string' }, originalName: { type: 'string' }, mimeType: { type: 'string' } } } } } })
+  @ApiBody({
+    schema: {
+      properties: {
+        file: {
+          type: 'object',
+          properties: {
+            buffer: { type: 'string' },
+            originalName: { type: 'string' },
+            mimeType: { type: 'string' },
+          },
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 201, description: 'Imagen subida' })
   async uploadProductImage(
     @CurrentTenant() tenantId: string,
@@ -96,7 +130,20 @@ export class StorageController {
   @HttpCode(201)
   @ApiOperation({ summary: 'Subir recibo de venta' })
   @ApiParam({ name: 'saleId', description: 'ID de la venta' })
-  @ApiBody({ schema: { properties: { file: { type: 'object', properties: { buffer: { type: 'string' }, originalName: { type: 'string' }, mimeType: { type: 'string' } } } } } })
+  @ApiBody({
+    schema: {
+      properties: {
+        file: {
+          type: 'object',
+          properties: {
+            buffer: { type: 'string' },
+            originalName: { type: 'string' },
+            mimeType: { type: 'string' },
+          },
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 201, description: 'Recibo subido' })
   async uploadReceipt(
     @CurrentTenant() tenantId: string,
@@ -141,7 +188,12 @@ export class StorageController {
   @TenantRequired()
   @ApiOperation({ summary: 'Obtener URL de archivo' })
   @ApiParam({ name: 'publicId', description: 'ID público del archivo' })
-  @ApiQuery({ name: 'expiresIn', required: false, type: Number, description: 'Tiempo de expiración en segundos' })
+  @ApiQuery({
+    name: 'expiresIn',
+    required: false,
+    type: Number,
+    description: 'Tiempo de expiración en segundos',
+  })
   @ApiResponse({ status: 200, description: 'URL del archivo' })
   async getFileUrl(@Param('publicId') publicId: string, @Query('expiresIn') expiresIn?: string) {
     const url = await this.storageUseCases.getFileUrl(
@@ -156,7 +208,12 @@ export class StorageController {
   @TenantRequired()
   @ApiOperation({ summary: 'Obtener URL temporal de archivo' })
   @ApiParam({ name: 'publicId', description: 'ID público del archivo' })
-  @ApiQuery({ name: 'expiresIn', required: false, type: Number, description: 'Tiempo de expiración en segundos' })
+  @ApiQuery({
+    name: 'expiresIn',
+    required: false,
+    type: Number,
+    description: 'Tiempo de expiración en segundos',
+  })
   @ApiResponse({ status: 200, description: 'URL temporal del archivo' })
   async getTemporaryUrl(
     @Param('publicId') publicId: string,

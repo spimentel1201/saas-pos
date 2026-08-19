@@ -9,7 +9,7 @@ import { BullModule } from '@nestjs/bullmq';
  * que se configuran mediante APP_* providers.
  */
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD, Reflector } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -49,7 +49,18 @@ import { UsersModule } from './modules/users/users.module.js';
       { name: 'medium', ttl: 10_000, limit: 50 },
       { name: 'tenant', ttl: 60_000, limit: 500 },
     ]),
-    BullModule.forRoot({ connection: { host: 'localhost', port: 6379 } }),
+    // Redis/BullMQ: solo si REDIS_URL esta configurado
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const redisUrl = config.get<string>('REDIS_URL');
+        if (!redisUrl) {
+          return { connection: { host: 'localhost', port: 6379, lazyConnect: true } };
+        }
+        return { connection: { url: redisUrl } };
+      },
+    }),
     PrismaModule,
     LoggerModule,
     TenantContextModule,

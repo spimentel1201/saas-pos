@@ -6,10 +6,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useLowStock, useStockByBranch, type StockItem } from '@/hooks/queries/use-inventory';
 import { useProducts } from '@/hooks/queries/use-catalog';
+import { type StockItem, useLowStock, useStockByBranch } from '@/hooks/queries/use-inventory';
 import { formatPEN } from '@/lib/formatters';
-import { AlertTriangle, ArrowUpDown, Box, LayoutGrid, List, Package, Search, Wrench } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowUpDown,
+  Box,
+  LayoutGrid,
+  List,
+  Package,
+  Search,
+  Wrench,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -32,15 +41,24 @@ function StockCard({ item, productName }: { item: StockItem; productName: string
           </div>
           <div className="ml-2 shrink-0">
             {item.isLow ? (
-              <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-400 text-xs">
+              <Badge
+                variant="outline"
+                className="border-amber-500/30 bg-amber-500/10 text-amber-400 text-xs"
+              >
                 Bajo
               </Badge>
             ) : item.isOverMax ? (
-              <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-400 text-xs">
+              <Badge
+                variant="outline"
+                className="border-blue-500/30 bg-blue-500/10 text-blue-400 text-xs"
+              >
                 Exceso
               </Badge>
             ) : (
-              <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs">
+              <Badge
+                variant="outline"
+                className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs"
+              >
                 OK
               </Badge>
             )}
@@ -296,15 +314,24 @@ export default function InventarioPage() {
                       </td>
                       <td className="py-2.5">
                         {item.isLow ? (
-                          <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-400 text-xs">
+                          <Badge
+                            variant="outline"
+                            className="border-amber-500/30 bg-amber-500/10 text-amber-400 text-xs"
+                          >
                             Bajo
                           </Badge>
                         ) : item.isOverMax ? (
-                          <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-400 text-xs">
+                          <Badge
+                            variant="outline"
+                            className="border-blue-500/30 bg-blue-500/10 text-blue-400 text-xs"
+                          >
                             Exceso
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs">
+                          <Badge
+                            variant="outline"
+                            className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs"
+                          >
                             OK
                           </Badge>
                         )}

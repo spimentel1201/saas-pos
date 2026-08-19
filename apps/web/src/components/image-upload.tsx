@@ -1,8 +1,8 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { type UploadResult, uploadImage } from '@/lib/cloudinary';
 import { cn } from '@/lib/utils';
-import { uploadImage, type UploadResult } from '@/lib/cloudinary';
 import { ImagePlus, Loader2, X } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
 
@@ -85,11 +85,7 @@ export function ImageUpload({ value, onChange, folder, className }: ImageUploadP
 
       {preview ? (
         <div className="relative group">
-          <img
-            src={preview}
-            alt="Preview"
-            className="h-40 w-full rounded-lg object-cover"
-          />
+          <img src={preview} alt="Preview" className="h-40 w-full rounded-lg object-cover" />
           {uploading && (
             <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/80">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -125,9 +121,7 @@ export function ImageUpload({ value, onChange, folder, className }: ImageUploadP
           )}
         >
           <ImagePlus className="mb-2 h-8 w-8 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">
-            Arrastra o haz click para subir
-          </p>
+          <p className="text-sm text-muted-foreground">Arrastra o haz click para subir</p>
           <p className="text-xs text-muted-foreground">PNG, JPG, WebP hasta 5MB</p>
         </button>
       )}

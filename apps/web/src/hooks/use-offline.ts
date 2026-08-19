@@ -1,21 +1,20 @@
 'use client';
 
-import { useLiveQuery } from 'dexie-react-hooks';
-import { useCallback, useEffect, useState } from 'react';
+import { api } from '@/lib/api';
 import {
+  type OfflineCategory,
+  type OfflineProduct,
   addPendingMutation,
   cacheCategories,
   cacheProducts,
   getPendingMutations,
   getPendingMutationsCount,
-  removePendingMutation,
   incrementRetries,
-  type OfflineProduct,
-  type OfflineCategory,
-  type PendingMutation,
+  removePendingMutation,
 } from '@/lib/db';
 import { useAuthStore } from '@/lib/store';
-import { api } from '@/lib/api';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { useCallback, useEffect, useState } from 'react';
 
 const MAX_RETRIES = 3;
 
@@ -147,7 +146,7 @@ export async function syncCatalogToCache(): Promise<void> {
       api.get<OfflineCategory[]>('/catalog/categories'),
     ]);
 
-    const productList = Array.isArray(products) ? products : (products as any).data ?? [];
+    const productList = Array.isArray(products) ? products : ((products as any).data ?? []);
     await cacheProducts(productList);
     await cacheCategories(categories as OfflineCategory[]);
   } catch {

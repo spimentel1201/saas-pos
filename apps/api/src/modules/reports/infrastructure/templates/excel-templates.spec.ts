@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import {
-  dailySalesTemplate,
-  categorySalesTemplate,
-  inventoryValuationTemplate,
-  cashReportTemplate,
-} from './excel-templates.js';
 import type {
-  DailySalesReport,
-  CategorySalesReport,
-  InventoryValuationReport,
   CashSummaryReport,
+  CategorySalesReport,
+  DailySalesReport,
+  InventoryValuationReport,
 } from '../../domain/entities/report.entities.js';
+import {
+  cashReportTemplate,
+  categorySalesTemplate,
+  dailySalesTemplate,
+  inventoryValuationTemplate,
+} from './excel-templates.js';
 
 describe('Excel Templates', () => {
   describe('dailySalesTemplate', () => {

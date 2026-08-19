@@ -6,8 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { type CheckoutPayment, type PaymentMethod, useCheckout } from '@/hooks/queries/use-sales';
 import { useCartStore, useCartTotal } from '@/hooks/use-cart';
-import { useCheckout, type CheckoutPayment, type PaymentMethod } from '@/hooks/queries/use-sales';
 import { formatPEN } from '@/lib/formatters';
 import { useState } from 'react';
 import { CheckoutSuccess } from './checkout-success';
@@ -19,7 +19,12 @@ interface PaymentModalProps {
   cashierSessionId?: number;
 }
 
-export function PaymentModal({ open, onOpenChange, branchCode, cashierSessionId }: PaymentModalProps) {
+export function PaymentModal({
+  open,
+  onOpenChange,
+  branchCode,
+  cashierSessionId,
+}: PaymentModalProps) {
   const items = useCartStore((s) => s.items);
   const total = useCartTotal();
   const clearCart = useCartStore((s) => s.clearCart);
@@ -32,12 +37,18 @@ export function PaymentModal({ open, onOpenChange, branchCode, cashierSessionId 
   const [transferRef, setTransferRef] = useState('');
   const [yapeRef, setYapeRef] = useState('');
   const [plinRef, setPlinRef] = useState('');
-const [showSuccess, setShowSuccess] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
   const [saleResult, setSaleResult] = useState<{
     id: string;
     numberSeq: number;
-    items: { productName: string; productSku?: string; qty: number; unitPrice: number; total: number }[];
+    items: {
+      productName: string;
+      productSku?: string;
+      qty: number;
+      unitPrice: number;
+      total: number;
+    }[];
     payments: { method: string; amount: number; ref?: string }[];
     subtotal: number;
     tax: number;
@@ -45,15 +56,15 @@ const [showSuccess, setShowSuccess] = useState(false);
     total: number;
     createdAt: string;
   } | null>(null);
-  const [isQueued, setIsQueued] = useState(false);
+  const [isQueued, _setIsQueued] = useState(false);
 
-  const cashReceived = parseFloat(cashAmount) || 0;
+  const cashReceived = Number.parseFloat(cashAmount) || 0;
   const change = cashReceived - total;
 
   const canPay =
     items.length > 0 &&
     ((method === 'CASH' && cashReceived >= total) ||
-      (method === 'CARD') ||
+      method === 'CARD' ||
       (method === 'TRANSFER' && transferRef.trim().length > 0) ||
       (method === 'YAPE' && yapeRef.trim().length > 0) ||
       (method === 'PLIN' && plinRef.trim().length > 0));
@@ -176,11 +187,21 @@ const [showSuccess, setShowSuccess] = useState(false);
         {/* Payment method tabs */}
         <Tabs value={method} onValueChange={(v) => setMethod(v as PaymentMethod)}>
           <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="CASH" className="text-xs">Efectivo</TabsTrigger>
-            <TabsTrigger value="CARD" className="text-xs">Tarjeta</TabsTrigger>
-            <TabsTrigger value="YAPE" className="text-xs">Yape</TabsTrigger>
-            <TabsTrigger value="PLIN" className="text-xs">Plin</TabsTrigger>
-            <TabsTrigger value="TRANSFER" className="text-xs">Transf.</TabsTrigger>
+            <TabsTrigger value="CASH" className="text-xs">
+              Efectivo
+            </TabsTrigger>
+            <TabsTrigger value="CARD" className="text-xs">
+              Tarjeta
+            </TabsTrigger>
+            <TabsTrigger value="YAPE" className="text-xs">
+              Yape
+            </TabsTrigger>
+            <TabsTrigger value="PLIN" className="text-xs">
+              Plin
+            </TabsTrigger>
+            <TabsTrigger value="TRANSFER" className="text-xs">
+              Transf.
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="CASH" className="space-y-4 pt-4">
@@ -199,18 +220,16 @@ const [showSuccess, setShowSuccess] = useState(false);
 
             {/* Quick amount buttons */}
             <div className="grid grid-cols-3 gap-2">
-              {[total, Math.ceil(total / 10) * 10, Math.ceil(total / 50) * 50].map(
-                (amount, i) => (
-                  <Button
-                    key={i}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCashAmount(amount.toFixed(2))}
-                  >
-                    {formatPEN(amount)}
-                  </Button>
-                ),
-              )}
+              {[total, Math.ceil(total / 10) * 10, Math.ceil(total / 50) * 50].map((amount, i) => (
+                <Button
+                  key={i}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCashAmount(amount.toFixed(2))}
+                >
+                  {formatPEN(amount)}
+                </Button>
+              ))}
             </div>
 
             {cashReceived >= total && (

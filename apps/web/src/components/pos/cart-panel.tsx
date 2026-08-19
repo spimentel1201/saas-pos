@@ -4,7 +4,13 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { useCartStore, useCartItemCount, useCartSubtotal, useCartTax, useCartTotal } from '@/hooks/use-cart';
+import {
+  useCartItemCount,
+  useCartStore,
+  useCartSubtotal,
+  useCartTax,
+  useCartTotal,
+} from '@/hooks/use-cart';
 import { formatPEN } from '@/lib/formatters';
 import { ShoppingCart, Trash2 } from 'lucide-react';
 import { CartItem } from './cart-item';
@@ -25,9 +31,7 @@ function CartHeader() {
     <div className="flex items-center justify-between px-4 py-3">
       <div className="flex items-center gap-2">
         <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm font-medium">
-          Carrito {itemCount > 0 && `(${itemCount})`}
-        </span>
+        <span className="text-sm font-medium">Carrito {itemCount > 0 && `(${itemCount})`}</span>
       </div>
       {items.length > 0 && (
         <Button
@@ -67,10 +71,7 @@ function CartFooter({ onCheckout }: { onCheckout: () => void }) {
         </div>
       </div>
 
-      <Button
-        className="mt-3 h-12 w-full text-base font-semibold"
-        onClick={onCheckout}
-      >
+      <Button className="mt-3 h-12 w-full text-base font-semibold" onClick={onCheckout}>
         Pagar {formatPEN(total)}
       </Button>
     </div>
@@ -85,9 +86,7 @@ function CartItems() {
       <div className="flex flex-1 flex-col items-center justify-center px-4 text-center">
         <ShoppingCart className="mb-3 h-10 w-10 text-muted-foreground/40" />
         <p className="text-sm text-muted-foreground">Carrito vacío</p>
-        <p className="text-xs text-muted-foreground/70">
-          Toca un producto para agregarlo
-        </p>
+        <p className="text-xs text-muted-foreground/70">Toca un producto para agregarlo</p>
       </div>
     );
   }
