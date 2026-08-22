@@ -1,5 +1,5 @@
 {
-  "installCommand": "pnpm install",
+  "installCommand": "corepack enable && pnpm install",
   "buildCommand": "pnpm --filter @pos/api build:vercel && pnpm --filter @pos/web build",
   "outputDirectory": "apps/web/.next",
   "framework": "nextjs",
