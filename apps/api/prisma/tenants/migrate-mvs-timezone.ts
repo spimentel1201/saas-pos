@@ -21,11 +21,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const migrationPath = resolve(
-    import.meta.dirname,
-    'migrations',
-    '002_refresh_mvs_timezone.sql',
-  );
+  const migrationPath = resolve(import.meta.dirname, 'migrations', '002_refresh_mvs_timezone.sql');
   const migrationSQL = readFileSync(migrationPath, 'utf8');
 
   const client = new pg.Client({ connectionString: url });

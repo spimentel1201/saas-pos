@@ -60,7 +60,15 @@ export const useAuthStore = create<AuthState>()(
         setCookie('tenant-slug', auth.tenantSlug);
       },
       logout: () => {
-        set({ accessToken: null, refreshToken: null, tenantSlug: null, userId: null, userName: null, userEmail: null, role: null });
+        set({
+          accessToken: null,
+          refreshToken: null,
+          tenantSlug: null,
+          userId: null,
+          userName: null,
+          userEmail: null,
+          role: null,
+        });
         removeCookie('access-token');
         removeCookie('refresh-token');
         removeCookie('tenant-slug');

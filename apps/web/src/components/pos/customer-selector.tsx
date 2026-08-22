@@ -1,6 +1,6 @@
 'use client';
 
-import { useCustomerSearch, type Customer } from '@/hooks/queries/use-customers';
+import { type Customer, useCustomerSearch } from '@/hooks/queries/use-customers';
 import { useCartStore } from '@/hooks/use-cart';
 import { User, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';

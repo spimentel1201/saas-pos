@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
 import { syncCatalogToCache } from '@/hooks/use-offline';
+import { useEffect } from 'react';
 
 // Offline-first desactivado temporalmente. Mientras sea true:
 // - No se registra el Service Worker (sin cache de assets/API).
@@ -33,7 +33,7 @@ export function ServiceWorkerRegistration() {
 
     navigator.serviceWorker
       .register('/sw.js')
-      .then((reg) => {
+      .then((_reg) => {
         // Sync catalog on startup
         syncCatalogToCache();
 
@@ -46,11 +46,14 @@ export function ServiceWorkerRegistration() {
         });
 
         // Periodic sync every 5 minutes
-        setInterval(() => {
-          if (navigator.onLine) {
-            syncCatalogToCache();
-          }
-        }, 5 * 60 * 1000);
+        setInterval(
+          () => {
+            if (navigator.onLine) {
+              syncCatalogToCache();
+            }
+          },
+          5 * 60 * 1000,
+        );
       })
       .catch(() => {
         // SW registration failed — app still works, just no offline

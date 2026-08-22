@@ -173,7 +173,10 @@ export class ReportsController {
     }
 
     const buffer = await workbook.xlsx.writeBuffer();
-    res?.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res?.header(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
     res?.header('Content-Disposition', `attachment; filename="${filename}"`);
     return buffer;
   }

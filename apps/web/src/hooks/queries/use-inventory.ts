@@ -108,7 +108,11 @@ export function useAdjustStock() {
   return useMutation<
     StockItem,
     ApiError,
-    { branchCode: string; productId: string; data: { newQty?: number; delta?: number; reason?: string; minQty?: number; maxQty?: number } }
+    {
+      branchCode: string;
+      productId: string;
+      data: { newQty?: number; delta?: number; reason?: string; minQty?: number; maxQty?: number };
+    }
   >({
     mutationFn: ({ branchCode, productId, data }) =>
       api.patch(`/inventory/stock/${branchCode}/${productId}/adjust`, data),

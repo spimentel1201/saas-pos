@@ -31,14 +31,8 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
-
-  mailhog:
-    image: mailhog/mailhog:latest
-    container_name: pos_mailhog
-    restart: unless-stopped
-    ports:
-      - "1025:1025"  # SMTP
-      - "8025:8025"  # UI
+    profiles:
+      - queue
 
 volumes:
   postgres_data:

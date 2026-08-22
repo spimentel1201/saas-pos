@@ -1,6 +1,4 @@
 'use client';
-
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -9,14 +7,14 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
+  type CashMovementType,
   useAddCashMovement,
   useCashArqueo,
   useCashMovements,
   useCashSession,
   useCloseCashSession,
-  type CashMovementType,
 } from '@/hooks/queries/use-cash';
-import { formatPEN, datetime } from '@/lib/formatters';
+import { datetime, formatPEN } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import {
   AlertCircle,
@@ -119,7 +117,9 @@ function ArqueoTab({ sessionId }: { sessionId: number }) {
         <Card className="bg-card">
           <CardContent className="p-3">
             <p className="text-xs text-muted-foreground">Entradas</p>
-            <p className="text-lg font-semibold text-emerald-500">{formatPEN(arqueo.summary.ins)}</p>
+            <p className="text-lg font-semibold text-emerald-500">
+              {formatPEN(arqueo.summary.ins)}
+            </p>
           </CardContent>
         </Card>
         <Card className="bg-card">
@@ -158,7 +158,7 @@ function ArqueoTab({ sessionId }: { sessionId: number }) {
                   onChange={(e) =>
                     setCounts((prev) => ({
                       ...prev,
-                      [d.value]: parseInt(e.target.value) || 0,
+                      [d.value]: Number.parseInt(e.target.value) || 0,
                     }))
                   }
                   className="h-9 w-24 text-center"
@@ -228,11 +228,7 @@ function ArqueoTab({ sessionId }: { sessionId: number }) {
               <Button variant="outline" className="flex-1" onClick={() => setShowConfirm(false)}>
                 Cancelar
               </Button>
-              <Button
-                className="flex-1"
-                disabled={closeSession.isPending}
-                onClick={handleClose}
-              >
+              <Button className="flex-1" disabled={closeSession.isPending} onClick={handleClose}>
                 {closeSession.isPending ? 'Cerrando...' : 'Cerrar Sesión'}
               </Button>
             </div>
@@ -252,8 +248,8 @@ function MovementsTab({ sessionId }: { sessionId: number }) {
   const [reason, setReason] = useState('');
 
   const handleAdd = async () => {
-    const value = parseFloat(amount);
-    if (isNaN(value) || value <= 0) return;
+    const value = Number.parseFloat(amount);
+    if (Number.isNaN(value) || value <= 0) return;
 
     try {
       await addMovement.mutateAsync({
@@ -321,7 +317,9 @@ function MovementsTab({ sessionId }: { sessionId: number }) {
 
                 return (
                   <div key={m.id} className="flex items-center gap-3 px-4 py-3">
-                    <div className={cn('flex h-8 w-8 items-center justify-center rounded-lg bg-muted')}>
+                    <div
+                      className={cn('flex h-8 w-8 items-center justify-center rounded-lg bg-muted')}
+                    >
                       <Icon className={cn('h-4 w-4', color)} />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -354,9 +352,7 @@ function MovementsTab({ sessionId }: { sessionId: number }) {
       <Dialog open={openModal} onOpenChange={setOpenModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>
-              {type === 'IN' ? 'Registrar Entrada' : 'Registrar Salida'}
-            </DialogTitle>
+            <DialogTitle>{type === 'IN' ? 'Registrar Entrada' : 'Registrar Salida'}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">

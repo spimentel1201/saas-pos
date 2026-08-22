@@ -89,9 +89,7 @@ describe('Branch entity', () => {
       code: 'B001',
     });
 
-    expect(() => branch.updateName('')).toThrow(
-      'Nombre de sucursal es requerido',
-    );
+    expect(() => branch.updateName('')).toThrow('Nombre de sucursal es requerido');
   });
 
   it('updateDetails updates multiple fields', () => {

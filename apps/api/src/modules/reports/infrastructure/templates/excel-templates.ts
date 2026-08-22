@@ -33,7 +33,9 @@ function setColumnWidths(sheet: import('exceljs').Worksheet, width: number): voi
   }
 }
 
-export async function dailySalesTemplate(data: DailySalesReport[]): Promise<import('exceljs').Workbook> {
+export async function dailySalesTemplate(
+  data: DailySalesReport[],
+): Promise<import('exceljs').Workbook> {
   const { workbook, sheet } = await createWorkbook('Reporte de Ventas Diarias');
 
   setHeaders(sheet, [
@@ -67,7 +69,9 @@ export async function dailySalesTemplate(data: DailySalesReport[]): Promise<impo
   return workbook;
 }
 
-export async function categorySalesTemplate(data: CategorySalesReport[]): Promise<import('exceljs').Workbook> {
+export async function categorySalesTemplate(
+  data: CategorySalesReport[],
+): Promise<import('exceljs').Workbook> {
   const { workbook, sheet } = await createWorkbook('Ventas por Categoria');
 
   setHeaders(sheet, ['Fecha', 'Sucursal', 'Categoria', 'Unidades', 'Total Ventas', 'Utilidad']);
@@ -114,7 +118,9 @@ export async function inventoryValuationTemplate(
   return workbook;
 }
 
-export async function cashReportTemplate(data: CashSummaryReport[]): Promise<import('exceljs').Workbook> {
+export async function cashReportTemplate(
+  data: CashSummaryReport[],
+): Promise<import('exceljs').Workbook> {
   const { workbook, sheet } = await createWorkbook('Reporte de Caja');
 
   setHeaders(sheet, [

@@ -137,9 +137,7 @@ describe('Customer entity', () => {
     });
 
     customer.adjustCredit(100);
-    expect(() => customer.adjustCredit(-150)).toThrow(
-      'Saldo de credito no puede ser negativo',
-    );
+    expect(() => customer.adjustCredit(-150)).toThrow('Saldo de credito no puede ser negativo');
   });
 
   it('deactivate sets active to false', () => {
@@ -175,9 +173,7 @@ describe('Customer entity', () => {
       name: 'Juan',
     });
 
-    expect(() => customer.updateName('')).toThrow(
-      'Nombre del cliente es requerido',
-    );
+    expect(() => customer.updateName('')).toThrow('Nombre del cliente es requerido');
   });
 
   it('updateContact updates multiple fields', () => {

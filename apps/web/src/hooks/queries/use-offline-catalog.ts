@@ -1,13 +1,24 @@
 'use client';
 
-import { getCachedProducts, type OfflineProduct } from '@/lib/db';
+import {
+  type Category,
+  type PaginatedResponse,
+  type Product,
+  type ProductQueryParams,
+  useProducts,
+} from '@/hooks/queries/use-catalog';
 import { useOnlineStatus } from '@/hooks/use-offline';
-import { useQuery } from '@tanstack/react-query';
-import { useProducts, type Product, type Category, type PaginatedResponse, type ProductQueryParams } from '@/hooks/queries/use-catalog';
-import { useEffect } from 'react';
-import { cacheProducts, cacheCategories, getCachedCategories, type OfflineCategory } from '@/lib/db';
 import { ApiError, api } from '@/lib/api';
+import { type OfflineProduct, getCachedProducts } from '@/lib/db';
+import {
+  type OfflineCategory,
+  cacheCategories,
+  cacheProducts,
+  getCachedCategories,
+} from '@/lib/db';
 import { useAuthStore } from '@/lib/store';
+import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
 
 /**
  * Products hook that falls back to Dexie cache when offline or API fails.
@@ -56,7 +67,13 @@ export function useOfflineProducts(params: ProductQueryParams = {}) {
 
   return {
     data: isOffline
-      ? ({ data: mappedProducts, total: mappedProducts.length, page: 1, limit: 200, totalPages: 1 } as PaginatedResponse<Product>)
+      ? ({
+          data: mappedProducts,
+          total: mappedProducts.length,
+          page: 1,
+          limit: 200,
+          totalPages: 1,
+        } as PaginatedResponse<Product>)
       : query.data,
     isLoading: query.isLoading && !isOffline ? true : cachedQuery.isLoading && isOffline,
     isError: isOffline ? false : query.isError,
@@ -124,7 +141,9 @@ export function useCatalogCacheSync() {
           api.get<OfflineCategory[]>('/catalog/categories'),
         ]);
 
-        const productList = Array.isArray(products) ? products : (products as Record<string, unknown>).data ?? [];
+        const productList = Array.isArray(products)
+          ? products
+          : ((products as Record<string, unknown>).data ?? []);
         await cacheProducts(productList as OfflineProduct[]);
         await cacheCategories(categories as OfflineCategory[]);
       } catch {

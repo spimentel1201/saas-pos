@@ -1,29 +1,7 @@
-/**
- * Seed script para poblar la base de datos con datos de prueba.
- *
- * Uso:
- *   pnpm --filter @pos/api db:seed
- *
- * Este script crea:
- *  - 2 tenants con schemas PostgreSQL propios
- *  - 3 usuarios (1 admin, 1 cajero, 1 manager)
- *  - 3 sucursales por tenant
- *  - 5 categorías, 5 impuestos, 15 productos por tenant
- *  - 5 clientes por tenant
- *  - 3 proveedores por tenant
- *  - Inventario con stock por sucursal
- *  - Órdenes de compra (DRAFT, SENT, RECEIVED)
- *  - Transferencias entre sucursales
- *  - Sesiones de caja (abiertas y cerradas)
- *  - Ventas con múltiples items y pagos
- *  - Devoluciones
- *  - Movimientos de inventario
- */
-import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { PrismaClient } from '@prisma/client';
-import pg from 'pg';
 import bcrypt from 'bcrypt';
+import pg from 'pg';
 
 const prisma = new PrismaClient();
 
@@ -59,42 +37,215 @@ const TAXES = [
 ];
 
 const PRODUCTS = [
-  { sku: 'ELEC-001', name: 'Laptop HP 15"', price: 2800, cost: 2100, category: 'cat-electro', tax: 'tax-igv', type: 'GOOD' },
-  { sku: 'ELEC-002', name: 'Mouse Logitech', price: 120, cost: 65, category: 'cat-electro', tax: 'tax-igv', type: 'GOOD' },
-  { sku: 'ELEC-003', name: 'Teclado Mecánico', price: 350, cost: 180, category: 'cat-electro', tax: 'tax-igv', type: 'GOOD' },
-  { sku: 'ROPA-001', name: 'Polo Básico', price: 89, cost: 35, category: 'cat-ropa', tax: 'tax-exento', type: 'GOOD' },
-  { sku: 'ROPA-002', name: 'Jeans Clásico', price: 199, cost: 85, category: 'cat-ropa', tax: 'tax-exento', type: 'GOOD' },
-  { sku: 'ROPA-003', name: 'Zapatillas Running', price: 399, cost: 210, category: 'cat-ropa', tax: 'tax-igv', type: 'GOOD' },
-  { sku: 'ALIM-001', name: 'Arroz 5kg', price: 25, cost: 18, category: 'cat-alimentos', tax: 'tax-exento', type: 'GOOD' },
-  { sku: 'ALIM-002', name: 'Aceite de Oliva 1L', price: 45, cost: 30, category: 'cat-alimentos', tax: 'tax-exento', type: 'GOOD' },
-  { sku: 'ALIM-003', name: 'Café Molido 500g', price: 38, cost: 22, category: 'cat-alimentos', tax: 'tax-exento', type: 'GOOD' },
-  { sku: 'HOGA-001', name: 'Sartén Antiadherente', price: 120, cost: 55, category: 'cat-hogar', tax: 'tax-igv', type: 'GOOD' },
-  { sku: 'HOGA-002', name: 'Juego de Sábanas', price: 180, cost: 75, category: 'cat-hogar', tax: 'tax-exento', type: 'GOOD' },
-  { sku: 'HOGA-003', name: 'Aspiradora Portátil', price: 450, cost: 280, category: 'cat-hogar', tax: 'tax-igv', type: 'GOOD' },
-  { sku: 'DEPO-001', name: 'Balón de Fútbol', price: 85, cost: 40, category: 'cat-deportes', tax: 'tax-igv', type: 'GOOD' },
-  { sku: 'DEPO-002', name: 'Raqueta de Tenis', price: 320, cost: 160, category: 'cat-deportes', tax: 'tax-igv', type: 'GOOD' },
-  { sku: 'DEPO-003', name: 'Mancuernas 10kg', price: 150, cost: 80, category: 'cat-deportes', tax: 'tax-igv', type: 'GOOD' },
+  {
+    sku: 'ELEC-001',
+    name: 'Laptop HP 15"',
+    price: 2800,
+    cost: 2100,
+    category: 'cat-electro',
+    tax: 'tax-igv',
+    type: 'GOOD',
+  },
+  {
+    sku: 'ELEC-002',
+    name: 'Mouse Logitech',
+    price: 120,
+    cost: 65,
+    category: 'cat-electro',
+    tax: 'tax-igv',
+    type: 'GOOD',
+  },
+  {
+    sku: 'ELEC-003',
+    name: 'Teclado Mecánico',
+    price: 350,
+    cost: 180,
+    category: 'cat-electro',
+    tax: 'tax-igv',
+    type: 'GOOD',
+  },
+  {
+    sku: 'ROPA-001',
+    name: 'Polo Básico',
+    price: 89,
+    cost: 35,
+    category: 'cat-ropa',
+    tax: 'tax-exento',
+    type: 'GOOD',
+  },
+  {
+    sku: 'ROPA-002',
+    name: 'Jeans Clásico',
+    price: 199,
+    cost: 85,
+    category: 'cat-ropa',
+    tax: 'tax-exento',
+    type: 'GOOD',
+  },
+  {
+    sku: 'ROPA-003',
+    name: 'Zapatillas Running',
+    price: 399,
+    cost: 210,
+    category: 'cat-ropa',
+    tax: 'tax-igv',
+    type: 'GOOD',
+  },
+  {
+    sku: 'ALIM-001',
+    name: 'Arroz 5kg',
+    price: 25,
+    cost: 18,
+    category: 'cat-alimentos',
+    tax: 'tax-exento',
+    type: 'GOOD',
+  },
+  {
+    sku: 'ALIM-002',
+    name: 'Aceite de Oliva 1L',
+    price: 45,
+    cost: 30,
+    category: 'cat-alimentos',
+    tax: 'tax-exento',
+    type: 'GOOD',
+  },
+  {
+    sku: 'ALIM-003',
+    name: 'Café Molido 500g',
+    price: 38,
+    cost: 22,
+    category: 'cat-alimentos',
+    tax: 'tax-exento',
+    type: 'GOOD',
+  },
+  {
+    sku: 'HOGA-001',
+    name: 'Sartén Antiadherente',
+    price: 120,
+    cost: 55,
+    category: 'cat-hogar',
+    tax: 'tax-igv',
+    type: 'GOOD',
+  },
+  {
+    sku: 'HOGA-002',
+    name: 'Juego de Sábanas',
+    price: 180,
+    cost: 75,
+    category: 'cat-hogar',
+    tax: 'tax-exento',
+    type: 'GOOD',
+  },
+  {
+    sku: 'HOGA-003',
+    name: 'Aspiradora Portátil',
+    price: 450,
+    cost: 280,
+    category: 'cat-hogar',
+    tax: 'tax-igv',
+    type: 'GOOD',
+  },
+  {
+    sku: 'DEPO-001',
+    name: 'Balón de Fútbol',
+    price: 85,
+    cost: 40,
+    category: 'cat-deportes',
+    tax: 'tax-igv',
+    type: 'GOOD',
+  },
+  {
+    sku: 'DEPO-002',
+    name: 'Raqueta de Tenis',
+    price: 320,
+    cost: 160,
+    category: 'cat-deportes',
+    tax: 'tax-igv',
+    type: 'GOOD',
+  },
+  {
+    sku: 'DEPO-003',
+    name: 'Mancuernas 10kg',
+    price: 150,
+    cost: 80,
+    category: 'cat-deportes',
+    tax: 'tax-igv',
+    type: 'GOOD',
+  },
 ];
 
 const CUSTOMERS = [
-  { name: 'Carlos Pérez', email: 'carlos@email.com', phone: '999111222', type: 'INDIVIDUAL', documentType: 'DNI', documentNumber: '12345678' },
-  { name: 'María García', email: 'maria@email.com', phone: '999222333', type: 'INDIVIDUAL', documentType: 'DNI', documentNumber: '87654321' },
-  { name: 'Distribuidora ABC SAC', email: 'ventas@abc.com', phone: '999333444', type: 'BUSINESS', documentType: 'RUC', documentNumber: '20123456789' },
-  { name: 'Juan López', email: 'juan@email.com', phone: '999444555', type: 'INDIVIDUAL', documentType: 'CE', documentNumber: 'CE12345' },
-  { name: 'Restaurantes Unidos', email: 'pedidos@ru.com', phone: '999555666', type: 'BUSINESS', documentType: 'RUC', documentNumber: '20987654321' },
+  {
+    name: 'Carlos Pérez',
+    email: 'carlos@email.com',
+    phone: '999111222',
+    type: 'INDIVIDUAL',
+    documentType: 'DNI',
+    documentNumber: '12345678',
+  },
+  {
+    name: 'María García',
+    email: 'maria@email.com',
+    phone: '999222333',
+    type: 'INDIVIDUAL',
+    documentType: 'DNI',
+    documentNumber: '87654321',
+  },
+  {
+    name: 'Distribuidora ABC SAC',
+    email: 'ventas@abc.com',
+    phone: '999333444',
+    type: 'BUSINESS',
+    documentType: 'RUC',
+    documentNumber: '20123456789',
+  },
+  {
+    name: 'Juan López',
+    email: 'juan@email.com',
+    phone: '999444555',
+    type: 'INDIVIDUAL',
+    documentType: 'CE',
+    documentNumber: 'CE12345',
+  },
+  {
+    name: 'Restaurantes Unidos',
+    email: 'pedidos@ru.com',
+    phone: '999555666',
+    type: 'BUSINESS',
+    documentType: 'RUC',
+    documentNumber: '20987654321',
+  },
 ];
 
 const SUPPLIERS = [
-  { id: 'sup-distrib', name: 'Distribuidora Mayorista SAC', contact: 'Pedro Vendedor', email: 'ventas@dm.com', phone: '999888777' },
-  { id: 'sup-import', name: 'Importaciones Global', contact: 'Laura Import', email: 'compras@ig.com', phone: '999777666' },
-  { id: 'sup-local', name: 'Productores Locales', contact: 'Miguel Campo', email: 'miguel@pl.com', phone: '999666555' },
+  {
+    id: 'sup-distrib',
+    name: 'Distribuidora Mayorista SAC',
+    contact: 'Pedro Vendedor',
+    email: 'ventas@dm.com',
+    phone: '999888777',
+  },
+  {
+    id: 'sup-import',
+    name: 'Importaciones Global',
+    contact: 'Laura Import',
+    email: 'compras@ig.com',
+    phone: '999777666',
+  },
+  {
+    id: 'sup-local',
+    name: 'Productores Locales',
+    contact: 'Miguel Campo',
+    email: 'miguel@pl.com',
+    phone: '999666555',
+  },
 ];
 
 async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 10);
 }
 
-async function seedTenantSchema(schemaName: string, tenantId: string) {
+async function seedTenantSchema(schemaName: string, _tenantId: string) {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL no definida');
 
@@ -125,19 +276,19 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
     // Branches (en shared schema ya están, pero las insertamos en tenant schema también)
     for (const b of BRANCHES) {
       await client.query(
-        `INSERT INTO branches (id, name, code, city) VALUES (gen_random_uuid(), $1, $2, $3) ON CONFLICT (code) DO NOTHING`,
+        'INSERT INTO branches (id, name, code, city) VALUES (gen_random_uuid(), $1, $2, $3) ON CONFLICT (code) DO NOTHING',
         [b.name, b.code, b.city],
       );
     }
 
     // Obtener branch codes
-    const branchResult = await client.query(`SELECT id, code FROM branches ORDER BY code`);
+    const branchResult = await client.query('SELECT id, code FROM branches ORDER BY code');
     const branchIds = branchResult.rows as { id: string; code: string }[];
 
     // Categories
     for (const c of CATEGORIES) {
       await client.query(
-        `INSERT INTO categories (id, name) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING`,
+        'INSERT INTO categories (id, name) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING',
         [c.id, c.name],
       );
     }
@@ -145,7 +296,7 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
     // Taxes
     for (const t of TAXES) {
       await client.query(
-        `INSERT INTO taxes (id, name, rate, type) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO NOTHING`,
+        'INSERT INTO taxes (id, name, rate, type) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO NOTHING',
         [t.id, t.name, t.rate, t.type],
       );
     }
@@ -210,8 +361,16 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
       const branchCode = branchIds[i % branchIds.length].code;
       const supplierIdx = i % SUPPLIERS.length;
       const items = [
-        { productId: productIds[i * 3 % productIds.length], qty: 10 + i * 5, unitCost: PRODUCTS[i * 3 % PRODUCTS.length].cost },
-        { productId: productIds[(i * 3 + 1) % productIds.length], qty: 5 + i * 2, unitCost: PRODUCTS[(i * 3 + 1) % PRODUCTS.length].cost },
+        {
+          productId: productIds[(i * 3) % productIds.length],
+          qty: 10 + i * 5,
+          unitCost: PRODUCTS[(i * 3) % PRODUCTS.length].cost,
+        },
+        {
+          productId: productIds[(i * 3 + 1) % productIds.length],
+          qty: 5 + i * 2,
+          unitCost: PRODUCTS[(i * 3 + 1) % PRODUCTS.length].cost,
+        },
       ];
       const total = items.reduce((sum, item) => sum + item.qty * item.unitCost, 0);
 
@@ -227,7 +386,15 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
         await client.query(
           `INSERT INTO purchase_receipts (po_id, received_by, items)
            VALUES ($1, 'seed-user', $2)`,
-          [poId, JSON.stringify(items.map(it => ({ ...it, receivedQty: it.qty * (poStatuses[i] === 'PARTIAL' ? 0.5 : 1) })))],
+          [
+            poId,
+            JSON.stringify(
+              items.map((it) => ({
+                ...it,
+                receivedQty: it.qty * (poStatuses[i] === 'PARTIAL' ? 0.5 : 1),
+              })),
+            ),
+          ],
         );
       }
     }
@@ -240,7 +407,7 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
         const fromBranch = branchIds[0].code;
         const toBranch = branchIds[1].code;
         const items = [
-          { productId: productIds[i * 2 % productIds.length], qty: 5 },
+          { productId: productIds[(i * 2) % productIds.length], qty: 5 },
           { productId: productIds[(i * 2 + 1) % productIds.length], qty: 3 },
         ];
 
@@ -290,8 +457,40 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
     }
 
     // Sales (15 per tenant: spread across last 7 days + today)
-    const paymentMethods = ['CASH', 'CARD', 'TRANSFER', 'CASH', 'CARD', 'CASH', 'YAPE', 'CARD', 'TRANSFER', 'PLIN', 'CASH', 'CARD', 'CASH', 'TRANSFER', 'CASH'];
-    const saleStatuses = ['COMPLETED', 'COMPLETED', 'COMPLETED', 'COMPLETED', 'VOID', 'COMPLETED', 'COMPLETED', 'RETURNED', 'COMPLETED', 'COMPLETED', 'COMPLETED', 'COMPLETED', 'COMPLETED', 'COMPLETED', 'COMPLETED'];
+    const paymentMethods = [
+      'CASH',
+      'CARD',
+      'TRANSFER',
+      'CASH',
+      'CARD',
+      'CASH',
+      'YAPE',
+      'CARD',
+      'TRANSFER',
+      'PLIN',
+      'CASH',
+      'CARD',
+      'CASH',
+      'TRANSFER',
+      'CASH',
+    ];
+    const saleStatuses = [
+      'COMPLETED',
+      'COMPLETED',
+      'COMPLETED',
+      'COMPLETED',
+      'VOID',
+      'COMPLETED',
+      'COMPLETED',
+      'RETURNED',
+      'COMPLETED',
+      'COMPLETED',
+      'COMPLETED',
+      'COMPLETED',
+      'COMPLETED',
+      'COMPLETED',
+      'COMPLETED',
+    ];
     const saleIds: string[] = [];
     for (let i = 0; i < 15; i++) {
       const saleId = `sale-${schemaName}-${String(i + 1).padStart(3, '0')}`;
@@ -303,7 +502,13 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
       const numItems = (i % 3) + 1;
       let subtotal = 0;
       let taxTotal = 0;
-      const saleItems: Array<{ productId: string; qty: number; unitPrice: number; taxAmount: number; total: number }> = [];
+      const saleItems: Array<{
+        productId: string;
+        qty: number;
+        unitPrice: number;
+        taxAmount: number;
+        total: number;
+      }> = [];
 
       for (let j = 0; j < numItems; j++) {
         const productIdx = (i + j) % PRODUCTS.length;
@@ -341,7 +546,17 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
         `INSERT INTO sales (id, branch_code, user_id, number_seq, customer_id, subtotal, tax, total, status, created_at)
          VALUES ($1, $2, 'seed-user', $3, $4, $5, $6, $7, $8, $9)
          ON CONFLICT (id) DO NOTHING`,
-        [saleId, branchCode, i + 1, customerId, subtotal, taxTotal, total, saleStatuses[i], saleDate.toISOString()],
+        [
+          saleId,
+          branchCode,
+          i + 1,
+          customerId,
+          subtotal,
+          taxTotal,
+          total,
+          saleStatuses[i],
+          saleDate.toISOString(),
+        ],
       );
 
       // Sale items
@@ -367,9 +582,13 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
       const returnId = `return-${schemaName}-${String(i + 1).padStart(3, '0')}`;
       const saleId = saleIds[i * 4]; // Returns from every 4th sale
       const returnItems = [
-        { productId: productIds[i * 2 % productIds.length], qty: 1, reason: 'Producto defectuoso' },
+        {
+          productId: productIds[(i * 2) % productIds.length],
+          qty: 1,
+          reason: 'Producto defectuoso',
+        },
       ];
-      const returnTotal = PRODUCTS[i * 2 % PRODUCTS.length].price;
+      const returnTotal = PRODUCTS[(i * 2) % PRODUCTS.length].price;
 
       await client.query(
         `INSERT INTO returns (id, sale_id, reason, items, total, created_at)
@@ -385,7 +604,7 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
       const movementTypes = ['PURCHASE', 'SALE', 'ADJUSTMENT'];
       for (let i = 0; i < Math.min(productIds.length, 8); i++) {
         const stockResult = await client.query(
-          `SELECT id FROM inventory_stocks WHERE branch_code = $1 AND product_id = $2`,
+          'SELECT id FROM inventory_stocks WHERE branch_code = $1 AND product_id = $2',
           [defaultBranchCode, productIds[i]],
         );
         if (stockResult.rows[0]) {
@@ -394,7 +613,14 @@ async function seedTenantSchema(schemaName: string, tenantId: string) {
           await client.query(
             `INSERT INTO inventory_movements (stock_id, type, delta, reason, ref, branch_code, user_id)
              VALUES ($1, $2, $3, $4, $5, $6, 'seed-user')`,
-            [stockId, movementTypes[i % 3], delta, `Ajuste seed #${i + 1}`, `REF-${i + 1}`, defaultBranchCode],
+            [
+              stockId,
+              movementTypes[i % 3],
+              delta,
+              `Ajuste seed #${i + 1}`,
+              `REF-${i + 1}`,
+              defaultBranchCode,
+            ],
           );
         }
       }
@@ -473,7 +699,7 @@ async function main() {
         create: {
           userId: user.id,
           tenantId: tenant.id,
-          role: u.role as any,
+          role: u.role as never,
         },
       });
 
@@ -492,7 +718,7 @@ async function main() {
         currentPeriodEnd: trialEnd,
       },
     });
-    console.log(`  💳 Suscripción TRIAL creada`);
+    console.log('  💳 Suscripción TRIAL creada');
 
     // Crear contador de uso
     const now = new Date();
@@ -506,7 +732,7 @@ async function main() {
         saleCount: 5,
       },
     });
-    console.log(`  📊 Contador de uso creado`);
+    console.log('  📊 Contador de uso creado');
   }
 
   console.log('\n🎉 Seed completado exitosamente!');

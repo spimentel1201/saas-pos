@@ -244,7 +244,10 @@ export class Sale {
 
   get cashReceived(): number {
     return this.props.payments
-      .filter((p) => p.method === 'CASH' || p.method === 'YAPE' || p.method === 'PLIN' || p.method === 'MIXED')
+      .filter(
+        (p) =>
+          p.method === 'CASH' || p.method === 'YAPE' || p.method === 'PLIN' || p.method === 'MIXED',
+      )
       .reduce((s, p) => s + p.amount, 0);
   }
 

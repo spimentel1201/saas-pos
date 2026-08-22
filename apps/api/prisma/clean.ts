@@ -27,7 +27,7 @@ async function main() {
   try {
     // Drop all tenant schemas
     const schemas = await client.query(
-      `SELECT schema_name FROM information_schema.schemata WHERE schema_name LIKE 'tenant_%'`
+      `SELECT schema_name FROM information_schema.schemata WHERE schema_name LIKE 'tenant_%'`,
     );
     for (const row of schemas.rows) {
       console.log(`Dropping schema: ${row.schema_name}`);
@@ -42,7 +42,7 @@ async function main() {
     await client.query(`DELETE FROM "Branch"`);
     await client.query(`DELETE FROM "User"`);
     await client.query(`DELETE FROM "Tenant"`);
-    
+
     console.log('✅ All data cleaned');
   } finally {
     await client.end();

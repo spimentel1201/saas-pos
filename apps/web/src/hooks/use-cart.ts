@@ -63,9 +63,7 @@ export const useCartStore = create<CartState>((set, get) => {
       const existing = items.find((i) => i.productId === item.productId);
       let next: CartItem[];
       if (existing) {
-        next = items.map((i) =>
-          i.productId === item.productId ? { ...i, qty: i.qty + qty } : i,
-        );
+        next = items.map((i) => (i.productId === item.productId ? { ...i, qty: i.qty + qty } : i));
       } else {
         next = [...items, { ...item, qty }];
       }

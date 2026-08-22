@@ -1,8 +1,12 @@
 'use client';
 
 import { Badge } from '@/components/ui/badge';
-import { useOnlineStatus, usePendingMutationsCount, useSyncPendingMutations } from '@/hooks/use-offline';
-import { CloudOff, RefreshCw, Loader2 } from 'lucide-react';
+import {
+  useOnlineStatus,
+  usePendingMutationsCount,
+  useSyncPendingMutations,
+} from '@/hooks/use-offline';
+import { CloudOff, Loader2, RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export function OfflineIndicator() {
@@ -29,7 +33,10 @@ export function OfflineIndicator() {
   return (
     <div className="flex items-center gap-2">
       {!isOnline && (
-        <Badge variant="outline" className="gap-1 border-amber-500/30 bg-amber-500/10 text-amber-400">
+        <Badge
+          variant="outline"
+          className="gap-1 border-amber-500/30 bg-amber-500/10 text-amber-400"
+        >
           <CloudOff className="h-3 w-3" />
           Offline
         </Badge>

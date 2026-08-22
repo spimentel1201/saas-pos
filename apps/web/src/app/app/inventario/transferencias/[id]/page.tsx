@@ -9,7 +9,7 @@ import {
   useShipTransfer,
   useTransfer,
 } from '@/hooks/queries/use-inventory';
-import { ArrowLeft, CheckCircle, Package, Send, Truck, XCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Send, Truck, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
@@ -29,7 +29,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function TransferDetailPage() {
   const params = useParams();
-  const router = useRouter();
+  const _router = useRouter();
   const transferId = params.id as string;
 
   const { data: transfer, isLoading } = useTransfer(transferId);
@@ -175,7 +175,8 @@ export default function TransferDetailPage() {
 
               {(transfer.status === 'RECEIVED' || transfer.status === 'CANCELED') && (
                 <p className="text-sm text-muted-foreground text-center">
-                  Esta transferencia ya fue {transfer.status === 'RECEIVED' ? 'recibida' : 'cancelada'}.
+                  Esta transferencia ya fue{' '}
+                  {transfer.status === 'RECEIVED' ? 'recibida' : 'cancelada'}.
                 </p>
               )}
             </CardContent>

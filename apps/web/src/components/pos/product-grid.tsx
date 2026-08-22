@@ -1,7 +1,4 @@
 'use client';
-
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useCartStore } from '@/hooks/use-cart';
 import { formatPEN } from '@/lib/formatters';
@@ -39,9 +36,7 @@ export function ProductGrid({ products, categories, isLoading, isOffline }: Prod
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.sku.toLowerCase().includes(q),
+        (p) => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q),
       );
     }
     if (selectedCategory) {
@@ -164,7 +159,9 @@ export function ProductGrid({ products, categories, isLoading, isOffline }: Prod
                 <div className="p-2">
                   <p className="truncate text-xs font-medium leading-tight">{product.name}</p>
                   <div className="mt-1 flex items-center justify-between">
-                    <span className="text-xs font-bold text-primary">{formatPEN(product.price)}</span>
+                    <span className="text-xs font-bold text-primary">
+                      {formatPEN(product.price)}
+                    </span>
                     {product.isOutOfStock && (
                       <span className="text-[9px] font-medium text-destructive">Sin stock</span>
                     )}
