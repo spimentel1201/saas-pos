@@ -32,6 +32,7 @@ COPY packages/types/package.json ./packages/types/
 COPY packages/storage/package.json ./packages/storage/
 COPY packages/ui/package.json ./packages/ui/
 RUN pnpm install --frozen-lockfile
+RUN cd /app/node_modules/.pnpm/bcrypt@5.1.1_supports-color@10.2.2/node_modules/bcrypt && node-gyp rebuild
 
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
