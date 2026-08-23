@@ -10,7 +10,7 @@ export class PrismaUserRepository implements UserRepositoryPort {
 
   async listByTenant(tenantId: string): Promise<TenantUserInfo[]> {
     // biome-ignore lint/suspicious/noExplicitAny: raw SQL on shared schema
-    const rows = await this.prisma.$queryRawUnsafe<any[]>(
+    const rows = await this.prisma.$queryRawUnsafe(
       `SELECT tu."userId", tu."tenantId", tu.role,
               u.name, u.email, tu."tenantId" as "tenantIdRaw"
        FROM "TenantUser" tu
@@ -18,8 +18,8 @@ export class PrismaUserRepository implements UserRepositoryPort {
        WHERE tu."tenantId" = $1
        ORDER BY u.name ASC`,
       tenantId,
-    );
-    return rows.map((r) => ({
+    ) as any[];
+    return rows.map((r: any) => ({
       userId: r.userId,
       tenantId: r.tenantId,
       role: r.role as Role,
@@ -31,7 +31,7 @@ export class PrismaUserRepository implements UserRepositoryPort {
 
   async findByUserAndTenant(userId: string, tenantId: string): Promise<TenantUserInfo | null> {
     // biome-ignore lint/suspicious/noExplicitAny: raw SQL on shared schema
-    const rows = await this.prisma.$queryRawUnsafe<any[]>(
+    const rows = await this.prisma.$queryRawUnsafe(
       `SELECT tu."userId", tu."tenantId", tu.role,
               u.name, u.email
        FROM "TenantUser" tu
@@ -39,7 +39,7 @@ export class PrismaUserRepository implements UserRepositoryPort {
        WHERE tu."userId" = $1 AND tu."tenantId" = $2`,
       userId,
       tenantId,
-    );
+    ) as any[];
     if (rows.length === 0 || !rows[0]) return null;
     const r = rows[0];
     return {
@@ -73,19 +73,19 @@ export class PrismaUserRepository implements UserRepositoryPort {
   }
 
   async inviteToTenant(tenantId: string, email: string, role: Role): Promise<TenantUserInfo> {
-    const user = await this.prisma.$queryRawUnsafe<{ id: string; name: string }[]>(
+    const user = await this.prisma.$queryRawUnsafe(
       `SELECT id, name FROM "User" WHERE email = $1`,
       email,
-    );
+    ) as any[];
     if (user.length === 0 || !user[0]) {
       throw new Error(`Usuario con email ${email} no encontrado. Debe registrarse primero.`);
     }
 
-    const existing = await this.prisma.$queryRawUnsafe<{ userId: string }[]>(
+    const existing = await this.prisma.$queryRawUnsafe(
       `SELECT "userId" FROM "TenantUser" WHERE "userId" = $1 AND "tenantId" = $2`,
       user[0].id,
       tenantId,
-    );
+    ) as any[];
     if (existing.length > 0) {
       throw new Error(`Usuario ${email} ya es miembro de este tenant`);
     }

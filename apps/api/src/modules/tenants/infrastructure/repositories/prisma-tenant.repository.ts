@@ -80,7 +80,7 @@ export class PrismaTenantRepository implements TenantRepositoryPort {
       where: { tenantId },
       orderBy: { createdAt: 'asc' },
     });
-    return rows.map((b) =>
+    return rows.map((b: any) =>
       BranchInfo.rehydrate({
         id: b.id,
         tenantId,

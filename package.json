@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "SaaS POS multi-tenant MVP (inventarios, ventas, compras, caja, reportes, codigos de barra/QR)",
-  "packageManager": "pnpm@10.0.0",
+  "packageManager": "pnpm@11.17.0",
   "engines": {
     "node": ">=20.10.0",
     "pnpm": ">=9.0.0"

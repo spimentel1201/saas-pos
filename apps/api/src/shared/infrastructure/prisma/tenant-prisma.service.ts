@@ -24,7 +24,7 @@ export class TenantPrismaService extends PrismaClient {
   async withTenant<T>(fn: (tx: TxClient) => Promise<T>): Promise<T> {
     const schema = this.ctx.requireSchemaName();
     const tz = TenantContext.current?.timezone || 'America/Lima';
-    const result = await this.$transaction(async (tx) => {
+    const result = await this.$transaction(async (tx: any) => {
       await tx.$executeRawUnsafe(`SET LOCAL search_path TO "${schema}", public`);
       await tx.$executeRawUnsafe(`SET LOCAL timezone TO '${tz}'`);
       return fn(tx as unknown as TxClient);
