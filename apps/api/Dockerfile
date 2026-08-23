@@ -10,6 +10,7 @@ COPY packages/storage/package.json ./packages/storage/
 COPY packages/ui/package.json ./packages/ui/
 RUN apk add --no-cache python3 make g++
 RUN pnpm install --frozen-lockfile
+RUN cd node_modules/.pnpm/bcrypt@5.1.1_supports-color@10.2.2/node_modules/bcrypt && npx --yes node-gyp rebuild
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
