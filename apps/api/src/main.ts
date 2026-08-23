@@ -26,11 +26,10 @@ async function bootstrap(): Promise<void> {
 
   // CORS para el frontend Next.js
   // Requiere @fastify/cors instalado (pnpm add @fastify/cors)
+  const tenantDomain = config.get<string>('TENANT_BASE_DOMAIN');
+  const frontendUrl = config.get<string>('FRONTEND_URL');
   const corsOrigins = isProd
-    ? [
-        `https://*.${config.get<string>('TENANT_BASE_DOMAIN')}`,
-        config.get<string>('FRONTEND_URL'),
-      ].filter(Boolean)
+    ? [tenantDomain ? `https://*.${tenantDomain}` : '', frontendUrl ?? ''].filter((o): o is string => !!o)
     : true;
 
   app.enableCors({
