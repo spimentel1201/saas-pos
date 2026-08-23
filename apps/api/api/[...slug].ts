@@ -1,48 +1,13 @@
-import 'reflect-metadata';
-import { ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { ExpressAdapter } from '@nestjs/platform-express';
-import express, { type Express } from 'express';
-import { AppModule } from '../src/app.module.js';
-import { AllExceptionsFilter } from '../src/shared/infrastructure/http/all-exceptions.filter.js';
+let cachedApp: any = null;
 
-let cachedApp: Express | null = null;
-
-async function bootstrap(): Promise<Express> {
+async function bootstrap() {
   if (cachedApp) return cachedApp;
-
-  const app: Express = express();
-
-  const nestApp = await NestFactory.create(AppModule, new ExpressAdapter(app), {
-    bufferLogs: true,
-  });
-
-  nestApp.enableCors({
-    origin: true,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-Slug', 'Accept'],
-  });
-
-  nestApp.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: { enableImplicitConversion: true },
-    }),
-  );
-
-  nestApp.useGlobalFilters(nestApp.get(AllExceptionsFilter));
-  nestApp.setGlobalPrefix('api/v1');
-
-  await nestApp.init();
-
-  cachedApp = app;
-  return app;
+  const mod = await import('../dist-api/api/index.js');
+  cachedApp = mod.default;
+  return cachedApp;
 }
 
 export default async function handler(req: any, res: any) {
   const app = await bootstrap();
-  return app(req, res);
+  return (app as any)(req, res);
 }
