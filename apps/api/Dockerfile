@@ -8,6 +8,7 @@ COPY apps/api/package.json ./apps/api/
 COPY packages/types/package.json ./packages/types/
 COPY packages/storage/package.json ./packages/storage/
 COPY packages/ui/package.json ./packages/ui/
+COPY .npmrc ./
 RUN pnpm install --frozen-lockfile
 
 FROM base AS builder
@@ -28,8 +29,11 @@ RUN apk add --no-cache libc6-compat openssl
 
 COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/apps/api/prisma ./prisma
-COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/package.json ./
+COPY --from=deps /app/node_modules ./node_modules
+
+RUN npm install --omit=dev
+RUN npx prisma generate
 
 EXPOSE 3000
 CMD ["node", "--max-old-space-size=384", "dist/main.js"]
