@@ -6,15 +6,14 @@ import express, { type Express } from 'express';
 import { AppModule } from '../src/app.module.js';
 import { AllExceptionsFilter } from '../src/shared/infrastructure/http/all-exceptions.filter.js';
 
-let app: Express;
-let nestApp: any;
+let cachedApp: Express | null = null;
 
-async function bootstrap() {
-  if (nestApp) return app;
+async function bootstrap(): Promise<Express> {
+  if (cachedApp) return cachedApp;
 
-  app = express();
+  const app: Express = express();
 
-  nestApp = await NestFactory.create(AppModule, new ExpressAdapter(app), {
+  const nestApp = await NestFactory.create(AppModule, new ExpressAdapter(app), {
     bufferLogs: true,
   });
 
@@ -38,10 +37,12 @@ async function bootstrap() {
   nestApp.setGlobalPrefix('api/v1');
 
   await nestApp.init();
+
+  cachedApp = app;
   return app;
 }
 
 export default async function handler(req: any, res: any) {
-  const expressApp = await bootstrap();
-  return expressApp(req, res);
+  const app = await bootstrap();
+  return app(req, res);
 }
