@@ -30,6 +30,8 @@ COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
 COPY apps/api/package.json ./
+COPY apps/api/docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
 
 EXPOSE 3000
-CMD ["node", "--max-old-space-size=512", "apps/api/dist/main.js"]
+ENTRYPOINT ["./docker-entrypoint.sh"]
