@@ -24,20 +24,13 @@ FROM base AS production
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN apk add --no-cache libc6-compat openssl python3 make g++
+RUN apk add --no-cache libc6-compat openssl
 
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc ./
-COPY apps/api/package.json ./apps/api/
-COPY packages/types/package.json ./packages/types/
-COPY packages/storage/package.json ./packages/storage/
-COPY packages/ui/package.json ./packages/ui/
-RUN pnpm install --frozen-lockfile
-RUN cd /app/node_modules/.pnpm/bcrypt@5.1.1_supports-color@10.2.2/node_modules/bcrypt && node install.js
-
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
-
-RUN cd apps/api && npx --yes prisma@6 generate
+COPY apps/api/package.json ./
 
 EXPOSE 3000
 CMD ["node", "--max-old-space-size=512", "apps/api/dist/main.js"]
