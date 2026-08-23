@@ -3,7 +3,14 @@
   "compilerOptions": {
     "outDir": "dist-api",
     "rootDir": ".",
-    "noEmit": false
+    "noEmit": false,
+    "skipLibCheck": true,
+    "noImplicitAny": false,
+    "strict": false,
+    "declaration": false,
+    "declarationMap": false,
+    "composite": false,
+    "incremental": false
   },
   "include": ["api/**/*.ts", "src/**/*.ts"]
 }
