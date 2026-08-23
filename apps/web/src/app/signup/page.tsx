@@ -5,17 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useAuthStore } from '@/lib/store';
 import { Check, Package, Shield, Zap } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-
-type PlanResponse = {
-  accessToken: string;
-  refreshToken: string;
-  userId: string;
-  tenantSlug: string;
-  tenantId: string;
-};
 
 const benefits = [
   { icon: Zap, text: 'Configuración en 15 minutos' },
@@ -25,6 +19,8 @@ const benefits = [
 ];
 
 export default function SignupPage() {
+  const router = useRouter();
+  const setAuth = useAuthStore((s) => s.setAuth);
   const [form, setForm] = useState({
     businessName: '',
     slug: '',
@@ -34,7 +30,6 @@ export default function SignupPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<PlanResponse | null>(null);
 
   const update = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((s) => ({ ...s, [k]: e.target.value }));
@@ -56,38 +51,22 @@ export default function SignupPage() {
         setError(body.detail ?? body.title ?? 'Error en el alta');
         return;
       }
-      setResult(body as PlanResponse);
+      setAuth({
+        accessToken: body.accessToken,
+        refreshToken: body.refreshToken,
+        tenantSlug: body.tenantSlug,
+        userId: body.userId,
+        userName: body.userName,
+        userEmail: body.userEmail,
+        role: body.primaryRole,
+      });
+      router.push('/app');
     } catch {
       setError('No se pudo conectar con el servidor. ¿Está corriendo `pnpm dev`?');
     } finally {
       setLoading(false);
     }
   };
-
-  if (result) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center px-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">¡Cuenta creada!</CardTitle>
-            <CardDescription>Tenant: {result.tenantSlug}</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <p className="text-sm text-muted-foreground">
-              Guarda estos tokens en localStorage / cookies. En una app real lo haría el código
-              automáticamente.
-            </p>
-            <pre className="overflow-auto rounded-lg bg-muted p-4 text-xs">
-              {JSON.stringify(result, null, 2)}
-            </pre>
-            <Button asChild>
-              <a href={`/app/${result.tenantSlug}`}>Continuar al panel →</a>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-screen" suppressHydrationWarning>
