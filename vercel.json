@@ -1,9 +1,1 @@
-{
-  "functions": {
-    "api/index.ts": {
-      "maxDuration": 30,
-      "memory": 512
-    }
-  },
-  "installCommand": "pnpm install --frozen-lockfile"
-}
+{}
