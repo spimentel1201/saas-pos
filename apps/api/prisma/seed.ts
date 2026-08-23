@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import pg from 'pg';
 
 const prisma = new PrismaClient();
