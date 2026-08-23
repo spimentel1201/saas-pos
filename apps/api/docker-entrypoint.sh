@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-echo "Running migrations..."
-npx --yes prisma@6 migrate deploy --schema=apps/api/prisma/schema.prisma
+echo "Pushing schema to database..."
+npx --yes prisma@6 db push --schema=apps/api/prisma/schema.prisma --accept-data-loss
 
 echo "Seeding database..."
 npx --yes tsx apps/api/prisma/seed.ts || echo "Seed skipped (data may already exist)"
