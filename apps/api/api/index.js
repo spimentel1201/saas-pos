@@ -2,16 +2,16 @@ import 'reflect-metadata';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
-import express, { type Express } from 'express';
+import express from 'express';
 import { AppModule } from '../src/app.module.js';
 import { AllExceptionsFilter } from '../src/shared/infrastructure/http/all-exceptions.filter.js';
 
-let cachedApp: Express | null = null;
+let cachedApp = null;
 
-async function bootstrap(): Promise<Express> {
+async function bootstrap() {
   if (cachedApp) return cachedApp;
 
-  const app: Express = express();
+  const app = express();
 
   const nestApp = await NestFactory.create(AppModule, new ExpressAdapter(app), {
     bufferLogs: true,
@@ -42,7 +42,7 @@ async function bootstrap(): Promise<Express> {
   return app;
 }
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req, res) {
   const app = await bootstrap();
-  return (app as any)(req, res);
+  return app(req, res);
 }
