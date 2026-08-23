@@ -2,7 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "dist-api",
-    "rootDir": "src",
+    "rootDir": ".",
     "noEmit": false,
     "skipLibCheck": true,
     "noImplicitAny": false,
@@ -12,6 +12,6 @@
     "composite": false,
     "incremental": false
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "dist-api", "api", "test", "prisma"]
+  "include": ["api/**/*.ts", "src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "dist-api"]
 }

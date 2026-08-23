@@ -1,48 +1,10 @@
-import 'reflect-metadata';
-import { ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { ExpressAdapter } from '@nestjs/platform-express';
-import express from 'express';
-import { AppModule } from '../src/app.module.js';
-import { AllExceptionsFilter } from '../src/shared/infrastructure/http/all-exceptions.filter.js';
+import { createApp } from '../dist-api/src/vercel.js';
 
 let cachedApp = null;
 
-async function bootstrap() {
-  if (cachedApp) return cachedApp;
-
-  const app = express();
-
-  const nestApp = await NestFactory.create(AppModule, new ExpressAdapter(app), {
-    bufferLogs: true,
-  });
-
-  nestApp.enableCors({
-    origin: true,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-Slug', 'Accept'],
-  });
-
-  nestApp.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: { enableImplicitConversion: true },
-    }),
-  );
-
-  nestApp.useGlobalFilters(nestApp.get(AllExceptionsFilter));
-  nestApp.setGlobalPrefix('api/v1');
-
-  await nestApp.init();
-
-  cachedApp = app;
-  return app;
-}
-
 export default async function handler(req, res) {
-  const app = await bootstrap();
-  return app(req, res);
+  if (!cachedApp) {
+    cachedApp = await createApp();
+  }
+  return cachedApp(req, res);
 }
