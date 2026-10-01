@@ -672,6 +672,18 @@ async function main() {
     });
     console.log(`✅ Tenant ${tenantName} creado (${tenant.id})`);
 
+    // Dual-write: registrar tambien en la tabla compartida. Los limites de plan
+    // (`countBranches`) y las estadisticas de onboarding leen `public."Branch"`,
+    // mientras la app lee `<schema>.branches` (creado abajo en seedTenantSchema).
+    for (const b of BRANCHES) {
+      await prisma.branch.upsert({
+        where: { tenantId_code: { tenantId: tenant.id, code: b.code } },
+        update: { name: b.name },
+        create: { tenantId: tenant.id, name: b.name, code: b.code },
+      });
+    }
+    console.log(`  🏪 ${BRANCHES.length} sucursales registradas (shared + tenant)`);
+
     // Crear schema en PostgreSQL
     await seedTenantSchema(schemaName, tenant.id);
 

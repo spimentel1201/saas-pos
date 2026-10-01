@@ -66,12 +66,26 @@ export class PrismaTenantRepository implements TenantRepositoryPort {
     const branch = await this.prisma.branch.create({
       data: { id: ulid(), tenantId, name, code },
     });
+    await this.ensureBranchInTenantSchema(branch.name, branch.code);
     return BranchInfo.rehydrate({
       id: branch.id,
       tenantId,
       name: branch.name,
       code: branch.code,
       createdAt: branch.createdAt,
+    });
+  }
+
+  async ensureBranchInTenantSchema(name: string, code: string): Promise<void> {
+    // Dual-write: la app (GET /branches, stock, caja) lee `<schema>.branches`,
+    // mientras que limites de plan y onboarding leen `public."Branch"`.
+    // Sin esto la sucursal creada en el wizard no aparecia en la UI.
+    await this.tenantPrisma.withTenant(async (tx) => {
+      await tx.$executeRaw`
+        INSERT INTO branches (name, code)
+        VALUES (${name}, ${code})
+        ON CONFLICT (code) DO NOTHING
+      `;
     });
   }
 

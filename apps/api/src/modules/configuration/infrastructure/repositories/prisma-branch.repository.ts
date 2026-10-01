@@ -1,11 +1,28 @@
 import { Injectable } from '@nestjs/common';
+import { TenantContext } from '../../../../shared/infrastructure/multi-tenant/tenant-context.js';
+import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.service.js';
 import { TenantPrismaService } from '../../../../shared/infrastructure/prisma/tenant-prisma.service.js';
 import type { BranchRepositoryPort } from '../../application/ports/config.repository.port.js';
 import { Branch, type BranchDTO } from '../../domain/entities/branch.entity.js';
 
+/**
+ * Hay dos fuentes de verdad de "sucursal" y deben mantenerse sincronizadas:
+ *
+ *  - `public."Branch"`  (Prisma compartida): limites de plan y control de
+ *    onboarding. Solo guarda id/tenantId/name/code.
+ *  - `<schema>.branches` (schema tenant): toda la data transaccional
+ *    (stock, ventas, caja) referencian `branch_code`, y `GET /branches` lee
+ *    de aqui.
+ *
+ * Este repositorio escribe primero en el schema tenant (es lo que la app lee)
+ * y luego replica en la tabla compartida.
+ */
 @Injectable()
 export class PrismaBranchRepository implements BranchRepositoryPort {
-  constructor(private readonly tenantPrisma: TenantPrismaService) {}
+  constructor(
+    private readonly tenantPrisma: TenantPrismaService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async findById(id: string): Promise<Branch | null> {
     return this.tenantPrisma.withTenant(async (tx) => {
@@ -46,7 +63,7 @@ export class PrismaBranchRepository implements BranchRepositoryPort {
 
   async save(branch: Branch): Promise<Branch> {
     const dto = branch.toDTO();
-    return this.tenantPrisma.withTenant(async (tx) => {
+    const saved = await this.tenantPrisma.withTenant(async (tx) => {
       if (dto.id) {
         await tx.$executeRawUnsafe(
           `UPDATE branches SET name = $1, address = $2, city = $3, timezone = $4,
@@ -76,12 +93,28 @@ export class PrismaBranchRepository implements BranchRepositoryPort {
       }
       return branch;
     });
+
+    // Replica en la tabla compartida (limites de plan / onboarding).
+    // Llave natural: (tenantId, code) — los ids de cada tabla no coinciden.
+    await this.prisma.branch.upsert({
+      where: { tenantId_code: { tenantId: TenantContext.require.id, code: dto.code } },
+      update: { name: dto.name },
+      create: { tenantId: TenantContext.require.id, name: dto.name, code: dto.code },
+    });
+
+    return saved;
   }
 
   async delete(id: string): Promise<void> {
+    const branch = await this.findById(id);
     await this.tenantPrisma.withTenant(async (tx) => {
       await tx.$executeRawUnsafe('DELETE FROM branches WHERE id = $1', id);
     });
+    if (branch) {
+      await this.prisma.branch.deleteMany({
+        where: { tenantId: TenantContext.require.id, code: branch.code },
+      });
+    }
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: raw SQL row mapping
