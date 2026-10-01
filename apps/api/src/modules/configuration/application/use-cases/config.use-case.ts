@@ -1,4 +1,5 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { ValidationError } from '../../../../shared/domain/errors/domain-error.js';
 import { BRANCH_REPO, SETTINGS_REPO, TAX_REPO } from '../../config.tokens.js';
 import { Branch } from '../../domain/entities/branch.entity.js';
 import type { BranchDTO } from '../../domain/entities/branch.entity.js';
@@ -85,7 +86,12 @@ export class TaxUseCases {
   constructor(@Inject(TAX_REPO) private readonly taxRepo: TaxRepositoryPort) {}
 
   async create(dto: CreateTaxInput): Promise<TaxDTO> {
-    const tax = Tax.create(dto);
+    let tax: Tax;
+    try {
+      tax = Tax.create(dto);
+    } catch (e) {
+      throw new ValidationError(e instanceof Error ? e.message : 'Impuesto invalido');
+    }
     const saved = await this.taxRepo.save(tax);
     return saved.toDTO();
   }
@@ -105,7 +111,12 @@ export class TaxUseCases {
     if (!tax) throw new NotFoundException('Impuesto no encontrado');
 
     if (dto.name) tax.updateName(dto.name);
-    if (dto.rate !== undefined) tax.updateRate(dto.rate);
+
+    try {
+      if (dto.rate !== undefined) tax.updateRate(dto.rate);
+    } catch (e) {
+      throw new ValidationError(e instanceof Error ? e.message : 'Tasa invalida');
+    }
 
     const saved = await this.taxRepo.save(tax);
     return saved.toDTO();

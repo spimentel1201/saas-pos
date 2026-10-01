@@ -1,5 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsObject,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class CreateBranchDto {
   @ApiProperty({ example: 'Sucursal Centro' })
@@ -54,12 +65,20 @@ export class UpdateBranchDto {
 }
 
 export class CreateTaxDto {
-  @ApiProperty({ example: 'IVA 16%' })
+  @ApiProperty({ example: 'IGV 18%' })
   @IsString()
+  @IsNotEmpty()
   @MaxLength(100)
   name!: string;
 
-  @ApiProperty({ example: 0.16 })
+  @ApiProperty({
+    example: 0.18,
+    description: 'Tasa como fraccion para PERCENT (18% = 0.18). Maximo 9.9999',
+  })
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 4 })
+  @Min(0)
+  @Max(9.9999)
   rate!: number;
 
   @ApiProperty({ enum: ['PERCENT', 'EXEMPT', 'FIXED'] })
@@ -68,14 +87,19 @@ export class CreateTaxDto {
 }
 
 export class UpdateTaxDto {
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: 'IGV 18%' })
   @IsOptional()
   @IsString()
+  @IsNotEmpty()
   @MaxLength(100)
   name?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: 0.18, description: 'Tasa como fraccion (18% = 0.18)' })
   @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 4 })
+  @Min(0)
+  @Max(9.9999)
   rate?: number;
 }
 
