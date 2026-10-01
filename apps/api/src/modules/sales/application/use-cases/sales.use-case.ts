@@ -46,6 +46,14 @@ export class SalesUseCases {
       throw new BadRequestException('Debe especificar al menos un método de pago');
 
     const totalPayments = dto.payments.reduce((s, p) => s + p.amount, 0);
+
+    // Venta a crédito: exige cliente asociado y saldo suficiente
+    const creditPayments = dto.payments.filter((p) => p.method === 'CREDIT');
+    if (creditPayments.length > 0) {
+      if (!dto.customerId) {
+        throw new BadRequestException('El pago con crédito requiere seleccionar un cliente');
+      }
+    }
     const saleItems = dto.items.map((i) =>
       SaleItem.create({
         productId: i.productId,

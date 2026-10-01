@@ -1,5 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsBoolean,
+  IsEmail,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import type { CustomerType, DocumentType } from '../../domain/entities/customer.entity.js';
 
 export class CreateCustomerDto {
@@ -125,11 +136,16 @@ export class UpdateCustomerDto {
 
 export class AdjustCreditDto {
   @ApiProperty({ description: 'Monto a ajustar (positivo sumar, negativo restar)', example: 50 })
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 4 })
+  @Min(-1_000_000)
+  @Max(1_000_000)
   amount!: number;
 
   @ApiPropertyOptional({ description: 'Razon del ajuste' })
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   reason?: string;
 }
 
@@ -154,8 +170,10 @@ export class CustomerQueryDto {
   @IsEnum(['INDIVIDUAL', 'BUSINESS'] as const)
   type?: CustomerType;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Filtra por estado activo' })
+  @Type(() => Boolean)
   @IsOptional()
+  @IsBoolean()
   active?: boolean;
 
   @ApiPropertyOptional({ default: 1 })

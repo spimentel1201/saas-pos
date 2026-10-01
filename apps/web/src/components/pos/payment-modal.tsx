@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useCustomer } from '@/hooks/queries/use-customers';
 import { type CheckoutPayment, type PaymentMethod, useCheckout } from '@/hooks/queries/use-sales';
 import { useCartStore, useCartTotal } from '@/hooks/use-cart';
 import { formatPEN } from '@/lib/formatters';
@@ -30,6 +31,7 @@ export function PaymentModal({
   const clearCart = useCartStore((s) => s.clearCart);
   const checkout = useCheckout();
   const customerId = useCartStore((s) => s.customerId);
+  const { data: customer } = useCustomer(customerId ?? null);
 
   const [method, setMethod] = useState<PaymentMethod>('CASH');
   const [cashAmount, setCashAmount] = useState('');
@@ -61,13 +63,17 @@ export function PaymentModal({
   const cashReceived = Number.parseFloat(cashAmount) || 0;
   const change = cashReceived - total;
 
+  const creditBalance = customer?.creditBalance ?? 0;
+  const canUseCredit = !!customerId && creditBalance >= total;
+
   const canPay =
     items.length > 0 &&
     ((method === 'CASH' && cashReceived >= total) ||
       method === 'CARD' ||
       (method === 'TRANSFER' && transferRef.trim().length > 0) ||
       (method === 'YAPE' && yapeRef.trim().length > 0) ||
-      (method === 'PLIN' && plinRef.trim().length > 0));
+      (method === 'PLIN' && plinRef.trim().length > 0) ||
+      (method === 'CREDIT' && canUseCredit));
 
   const handlePay = async () => {
     setPayError(null);
@@ -83,6 +89,8 @@ export function PaymentModal({
       payments.push({ method: 'YAPE', amount: total, ref: yapeRef });
     } else if (method === 'PLIN') {
       payments.push({ method: 'PLIN', amount: total, ref: plinRef });
+    } else if (method === 'CREDIT') {
+      payments.push({ method: 'CREDIT', amount: total });
     }
 
     const checkoutPayload = {
@@ -186,7 +194,7 @@ export function PaymentModal({
 
         {/* Payment method tabs */}
         <Tabs value={method} onValueChange={(v) => setMethod(v as PaymentMethod)}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6">
             <TabsTrigger value="CASH" className="text-xs">
               Efectivo
             </TabsTrigger>
@@ -201,6 +209,9 @@ export function PaymentModal({
             </TabsTrigger>
             <TabsTrigger value="TRANSFER" className="text-xs">
               Transf.
+            </TabsTrigger>
+            <TabsTrigger value="CREDIT" className="text-xs">
+              Crédito
             </TabsTrigger>
           </TabsList>
 
@@ -301,6 +312,36 @@ export function PaymentModal({
                 autoFocus
               />
             </div>
+          </TabsContent>
+
+          <TabsContent value="CREDIT" className="space-y-4 pt-4">
+            {!customerId ? (
+              <div className="rounded-md bg-destructive/10 px-3 py-3 text-sm text-destructive">
+                Selecciona un cliente para pagar con crédito.
+              </div>
+            ) : (
+              <>
+                <div className="rounded-lg bg-muted p-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Saldo disponible</span>
+                    <span className="font-semibold">{formatPEN(creditBalance)}</span>
+                  </div>
+                  <div className="mt-1 flex justify-between text-sm">
+                    <span className="text-muted-foreground">Saldo después del pago</span>
+                    <span
+                      className={canUseCredit ? 'font-semibold' : 'font-semibold text-destructive'}
+                    >
+                      {formatPEN(creditBalance - total)}
+                    </span>
+                  </div>
+                </div>
+                {!canUseCredit && (
+                  <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                    Saldo de crédito insuficiente para cubrir esta venta.
+                  </div>
+                )}
+              </>
+            )}
           </TabsContent>
         </Tabs>
 

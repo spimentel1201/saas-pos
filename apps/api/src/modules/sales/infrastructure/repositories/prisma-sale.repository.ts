@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { TenantPrismaService } from '../../../../shared/infrastructure/prisma/tenant-prisma.service.js';
 import type {
   CheckoutInput,
@@ -137,6 +137,24 @@ export class PrismaSaleRepository implements SaleRepositoryPort {
             `Venta ${input.saleId} (${payment.method})`,
             input.branchCode,
           );
+        } else {
+          // Descontar del saldo de crédito del cliente (misma transacción).
+          // Si no alcanza el saldo, 0 filas afectadas -> rollback de toda la venta.
+          if (!input.customerId) {
+            throw new BadRequestException('El pago con crédito requiere seleccionar un cliente');
+          }
+          const affected = await tx.$executeRawUnsafe(
+            `UPDATE customers
+                SET credit_balance = credit_balance - $1, updated_at = now()
+              WHERE id = $2
+                AND active = true
+                AND credit_balance >= $1`,
+            payment.amount,
+            input.customerId,
+          );
+          if (affected === 0) {
+            throw new BadRequestException('Saldo de crédito insuficiente para cubrir el pago');
+          }
         }
       }
 

@@ -24,6 +24,7 @@ import {
   useDeactivateCustomer,
   useUpdateCustomer,
 } from '@/hooks/queries/use-customers';
+import { ApiError } from '@/lib/api';
 import { formatPEN } from '@/lib/formatters';
 import {
   Edit,
@@ -199,12 +200,18 @@ function CreditAdjustDialog({
   const adjust = useAdjustCredit();
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   const handleAdjust = async () => {
     const value = Number.parseFloat(amount);
     if (Number.isNaN(value) || value === 0) return;
-    await adjust.mutateAsync({ id: customer.id, amount: value, reason: reason || undefined });
-    onClose();
+    setError(null);
+    try {
+      await adjust.mutateAsync({ id: customer.id, amount: value, reason: reason || undefined });
+      onClose();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.detail : 'No se pudo ajustar el crédito');
+    }
   };
 
   return (
@@ -228,6 +235,11 @@ function CreditAdjustDialog({
         <Label htmlFor="credit-reason">Motivo (opcional)</Label>
         <Input id="credit-reason" value={reason} onChange={(e) => setReason(e.target.value)} />
       </div>
+      {error && (
+        <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {error}
+        </div>
+      )}
       <div className="flex gap-3">
         <Button variant="outline" className="flex-1" onClick={onClose}>
           Cancelar

@@ -153,6 +153,8 @@ export function useCheckout() {
       queryClient.invalidateQueries({ queryKey: ['inventory', 'stock'] });
       queryClient.invalidateQueries({ queryKey: ['reports'] });
       queryClient.invalidateQueries({ queryKey: ['catalog', 'products'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['customer'] });
     },
   });
 }

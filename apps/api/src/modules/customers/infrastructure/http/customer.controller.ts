@@ -84,7 +84,7 @@ export class CustomerController {
   @ApiParam({ name: 'id', description: 'UUID del cliente' })
   @ApiBody({ type: AdjustCreditDto })
   async adjustCredit(@Param('id') id: string, @Body() dto: AdjustCreditDto) {
-    return this.customerUseCases.adjustCredit(id, dto.amount);
+    return this.customerUseCases.adjustCredit(id, dto.amount, dto.reason);
   }
 
   @Get(':id/purchases')
