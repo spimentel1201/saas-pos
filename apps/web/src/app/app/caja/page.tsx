@@ -8,18 +8,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { type CashSession, useCashSessions, useOpenCashSession } from '@/hooks/queries/use-cash';
+import { useBranches } from '@/hooks/queries/use-config';
+import { ApiError } from '@/lib/api';
 import { formatPEN } from '@/lib/formatters';
 import { datetime } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { AlertCircle, ArrowRight, CheckCircle2, Clock, Plus, Wallet } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
-
-const BRANCHES = [
-  { code: 'CEN01', name: 'Lima Centro' },
-  { code: 'NOR01', name: 'Norte' },
-  { code: 'SUR01', name: 'Sur' },
-];
+import { useEffect, useState } from 'react';
 
 const STATUS_CONFIG = {
   OPEN: { label: 'Abierta', variant: 'default' as const, icon: Clock, color: 'text-emerald-500' },
@@ -113,19 +109,29 @@ function SessionCard({ session }: { session: CashSession }) {
 export default function CajaPage() {
   const [filter, setFilter] = useState<string>('ALL');
   const [openModal, setOpenModal] = useState(false);
-  const [branch, setBranch] = useState('CEN01');
+  const [branch, setBranch] = useState('');
   const [openingBalance, setOpeningBalance] = useState('');
+  const [openError, setOpenError] = useState<string | null>(null);
 
+  const { data: branches, isLoading: branchesLoading } = useBranches();
   const { data, isLoading } = useCashSessions({
     status: filter === 'ALL' ? undefined : (filter as 'OPEN' | 'CLOSED'),
   });
   const openSession = useOpenCashSession();
+
+  // Preselecciona una sucursal real del negocio (nada de valores fijos).
+  useEffect(() => {
+    const first = branches?.[0]?.code;
+    if (!first) return;
+    setBranch((prev) => (branches?.some((b) => b.code === prev) ? prev : first));
+  }, [branches]);
 
   const sessions = data?.data ?? [];
 
   const handleOpen = async () => {
     const balance = Number.parseFloat(openingBalance);
     if (Number.isNaN(balance) || balance < 0) return;
+    setOpenError(null);
 
     try {
       await openSession.mutateAsync({
@@ -134,8 +140,8 @@ export default function CajaPage() {
       });
       setOpenModal(false);
       setOpeningBalance('');
-    } catch {
-      // error handled by mutation
+    } catch (err) {
+      setOpenError(err instanceof ApiError ? err.detail : 'No se pudo abrir la sesión de caja');
     }
   };
 
@@ -210,14 +216,24 @@ export default function CajaPage() {
               <select
                 value={branch}
                 onChange={(e) => setBranch(e.target.value)}
+                disabled={branchesLoading}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
-                {BRANCHES.map((b) => (
+                {branchesLoading && <option value="">Cargando sucursales...</option>}
+                {!branchesLoading && (branches ?? []).length === 0 && (
+                  <option value="">Sin sucursales</option>
+                )}
+                {(branches ?? []).map((b) => (
                   <option key={b.code} value={b.code}>
                     {b.name} ({b.code})
                   </option>
                 ))}
               </select>
+              {!branchesLoading && (branches ?? []).length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Crea una sucursal en Configuración → Sucursales para abrir caja.
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -235,9 +251,15 @@ export default function CajaPage() {
 
             <Separator />
 
+            {openError && (
+              <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {openError}
+              </div>
+            )}
+
             <Button
               className="w-full"
-              disabled={openSession.isPending || !openingBalance}
+              disabled={openSession.isPending || !openingBalance || !branch}
               onClick={handleOpen}
             >
               {openSession.isPending ? 'Abriendo...' : 'Abrir Sesión'}

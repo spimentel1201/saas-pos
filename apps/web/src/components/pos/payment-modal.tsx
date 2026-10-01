@@ -68,6 +68,7 @@ export function PaymentModal({
 
   const canPay =
     items.length > 0 &&
+    !!branchCode &&
     ((method === 'CASH' && cashReceived >= total) ||
       method === 'CARD' ||
       (method === 'TRANSFER' && transferRef.trim().length > 0) ||
@@ -346,6 +347,12 @@ export function PaymentModal({
         </Tabs>
 
         <Separator className="my-2" />
+
+        {!branchCode && (
+          <div className="rounded-md bg-amber-500/10 px-3 py-2 text-sm text-amber-500">
+            Selecciona una sucursal en la barra superior para registrar la venta.
+          </div>
+        )}
 
         {payError && (
           <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">

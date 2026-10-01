@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProducts } from '@/hooks/queries/use-catalog';
+import { useBranches } from '@/hooks/queries/use-config';
 import { type StockItem, useLowStock, useStockByBranch } from '@/hooks/queries/use-inventory';
 import { formatPEN } from '@/lib/formatters';
 import {
@@ -15,18 +16,13 @@ import {
   Box,
   LayoutGrid,
   List,
+  Loader2,
   Package,
   Search,
   Wrench,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-
-const BRANCHES = [
-  { code: 'CEN01', name: 'Lima Centro', city: 'Lima' },
-  { code: 'NOR01', name: 'Norte', city: 'Trujillo' },
-  { code: 'SUR01', name: 'Sur', city: 'Arequipa' },
-];
 
 function StockCard({ item, productName }: { item: StockItem; productName: string }) {
   return (
@@ -96,9 +92,19 @@ function StockCard({ item, productName }: { item: StockItem; productName: string
 }
 
 export default function InventarioPage() {
-  const [branch, setBranch] = useState('CEN01');
+  const [branch, setBranch] = useState('');
   const [search, setSearch] = useState('');
   const [view, setView] = useState<'table' | 'cards'>('table');
+
+  const { data: branches, isLoading: branchesLoading } = useBranches();
+
+  // La pestana activa siempre apunta a una sucursal del negocio; si la guardada
+  // dejo de existir caemos a la primera disponible.
+  useEffect(() => {
+    const first = branches?.[0]?.code;
+    if (!first) return;
+    setBranch((prev) => (branches?.some((b) => b.code === prev) ? prev : first));
+  }, [branches]);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 639px)');
@@ -210,11 +216,22 @@ export default function InventarioPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Tabs value={branch} onValueChange={setBranch}>
           <TabsList>
-            {BRANCHES.map((b) => (
-              <TabsTrigger key={b.code} value={b.code} className="text-xs sm:text-sm">
-                {b.name}
-              </TabsTrigger>
-            ))}
+            {branchesLoading ? (
+              <div className="flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Cargando...
+              </div>
+            ) : (branches ?? []).length === 0 ? (
+              <span className="px-3 py-1.5 text-sm text-muted-foreground">
+                Sin sucursales — créalas en Configuración
+              </span>
+            ) : (
+              branches?.map((b) => (
+                <TabsTrigger key={b.code} value={b.code} className="text-xs sm:text-sm">
+                  {b.name}
+                </TabsTrigger>
+              ))
+            )}
           </TabsList>
         </Tabs>
         <div className="flex items-center gap-2">
@@ -249,7 +266,7 @@ export default function InventarioPage() {
       </div>
 
       {/* Loading */}
-      {isLoading ? (
+      {branchesLoading || !branch || isLoading ? (
         <div className="flex h-32 items-center justify-center">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
@@ -270,7 +287,7 @@ export default function InventarioPage() {
         <Card className="bg-card">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">
-              Stock — {BRANCHES.find((b) => b.code === branch)?.name}
+              Stock — {branches?.find((b) => b.code === branch)?.name ?? 'Sucursal'}
             </CardTitle>
           </CardHeader>
           <CardContent>

@@ -12,18 +12,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useProducts } from '@/hooks/queries/use-catalog';
+import { useBranches } from '@/hooks/queries/use-config';
 import { useCreateTransfer } from '@/hooks/queries/use-inventory';
 import { ApiError } from '@/lib/api';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-
-const BRANCHES = [
-  { code: 'CEN01', name: 'Lima Centro' },
-  { code: 'NOR01', name: 'Norte (Trujillo)' },
-  { code: 'SUR01', name: 'Sur (Arequipa)' },
-];
 
 interface TransferItemForm {
   productId: string;
@@ -34,6 +29,8 @@ export default function NewTransferPage() {
   const router = useRouter();
   const createTransfer = useCreateTransfer();
   const { data: products } = useProducts({ limit: 200 });
+  // Solo sucursales del negocio (schema tenant), nunca una lista local.
+  const { data: branches, isLoading: branchesLoading } = useBranches();
 
   const [fromBranch, setFromBranch] = useState('');
   const [toBranch, setToBranch] = useState('');
@@ -61,12 +58,17 @@ export default function NewTransferPage() {
     setItems(updated);
   };
 
+  const branchList = branches ?? [];
+
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!fromBranch) newErrors.fromBranch = 'Sucursal origen requerida';
     if (!toBranch) newErrors.toBranch = 'Sucursal destino requerida';
     if (fromBranch && toBranch && fromBranch === toBranch) {
       newErrors.toBranch = 'Origen y destino no pueden ser iguales';
+    }
+    if (branchList.length < 2) {
+      newErrors.fromBranch = 'Se necesitan al menos 2 sucursales para transferir';
     }
     const validItems = items.filter((i) => i.productId && i.qty);
     if (validItems.length === 0) newErrors.items = 'Agrega al menos un producto';
@@ -119,12 +121,18 @@ export default function NewTransferPage() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Origen *</Label>
-                  <Select value={fromBranch} onValueChange={setFromBranch}>
+                  <Select
+                    value={fromBranch}
+                    onValueChange={setFromBranch}
+                    disabled={branchesLoading}
+                  >
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar origen" />
+                      <SelectValue
+                        placeholder={branchesLoading ? 'Cargando...' : 'Seleccionar origen'}
+                      />
                     </SelectTrigger>
                     <SelectContent>
-                      {BRANCHES.map((b) => (
+                      {branchList.map((b) => (
                         <SelectItem key={b.code} value={b.code}>
                           {b.name}
                         </SelectItem>
@@ -137,21 +145,31 @@ export default function NewTransferPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Destino *</Label>
-                  <Select value={toBranch} onValueChange={setToBranch}>
+                  <Select value={toBranch} onValueChange={setToBranch} disabled={branchesLoading}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar destino" />
+                      <SelectValue
+                        placeholder={branchesLoading ? 'Cargando...' : 'Seleccionar destino'}
+                      />
                     </SelectTrigger>
                     <SelectContent>
-                      {BRANCHES.filter((b) => b.code !== fromBranch).map((b) => (
-                        <SelectItem key={b.code} value={b.code}>
-                          {b.name}
-                        </SelectItem>
-                      ))}
+                      {branchList
+                        .filter((b) => b.code !== fromBranch)
+                        .map((b) => (
+                          <SelectItem key={b.code} value={b.code}>
+                            {b.name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   {errors.toBranch && <p className="text-xs text-destructive">{errors.toBranch}</p>}
                 </div>
               </div>
+              {branchList.length < 2 && !branchesLoading && (
+                <p className="text-xs text-muted-foreground">
+                  Este negocio solo tiene {branchList.length} sucursal. Crea otra en Configuración →
+                  Sucursales para poder transferir.
+                </p>
+              )}
             </CardContent>
           </Card>
 
@@ -218,9 +236,18 @@ export default function NewTransferPage() {
             </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={createTransfer.isPending}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={createTransfer.isPending || branchesLoading || branchList.length < 2}
+          >
             {createTransfer.isPending ? (
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            ) : branchesLoading ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Cargando sucursales...
+              </span>
             ) : (
               'Crear Transferencia'
             )}

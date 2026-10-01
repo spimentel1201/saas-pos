@@ -13,16 +13,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { useOpenSessionByBranch } from '@/hooks/queries/use-cash';
+import { useBranches } from '@/hooks/queries/use-config';
 import { useUser } from '@/hooks/use-auth';
 import { useCartStore } from '@/hooks/use-cart';
-import { ChevronDown, MapPin, Menu, Search, Wallet } from 'lucide-react';
-
-const BRANCHES = [
-  { code: '', name: 'Todas' },
-  { code: 'CEN01', name: 'Lima Centro' },
-  { code: 'NOR01', name: 'Norte' },
-  { code: 'SUR01', name: 'Sur' },
-];
+import { ChevronDown, Loader2, MapPin, Menu, Search, Wallet } from 'lucide-react';
+import { useEffect } from 'react';
 
 interface TopBarProps {
   onMenuToggle?: () => void;
@@ -31,11 +26,24 @@ interface TopBarProps {
 export function TopBar({ onMenuToggle }: TopBarProps) {
   const branchCode = useCartStore((s) => s.branchCode);
   const setBranch = useCartStore((s) => s.setBranch);
+  const ensureBranch = useCartStore((s) => s.ensureBranch);
   const { data: user } = useUser();
+  const { data: branches, isLoading: branchesLoading } = useBranches();
   const { data: openSession } = useOpenSessionByBranch(branchCode);
 
-  const currentBranch = BRANCHES.find((b) => b.code === branchCode) ?? BRANCHES[0];
-  const branchName = currentBranch?.name ?? 'Sin sede';
+  // La sucursal activa siempre viene del backend; si no hay ninguna guardada
+  // (o apunta a una sucursal inexistente) se selecciona la primera disponible.
+  useEffect(() => {
+    if (branches?.length) {
+      ensureBranch(branches.map((b) => b.code));
+    }
+  }, [branches, ensureBranch]);
+
+  // "Todas" (code='') no es una sucursal: es el filtro que usa el dashboard para
+  // consolidar todas las sucursales. Solo aparece si el negocio tiene alguna.
+  const options = [...(branches?.length ? [{ code: '', name: 'Todas' }] : []), ...(branches ?? [])];
+  const currentBranch = options.find((b) => b.code === branchCode);
+  const branchName = currentBranch?.name ?? (branchesLoading ? '...' : 'Sin sucursales');
   const branchCodeLabel = currentBranch?.code ?? '';
   const displayName = user?.name || 'Usuario';
   const initials = displayName
@@ -69,17 +77,28 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
-          {BRANCHES.map((b) => (
-            <DropdownMenuItem
-              key={b.code}
-              onClick={() => setBranch(b.code)}
-              className={branchCode === b.code ? 'bg-primary/10 text-primary' : ''}
-            >
-              <MapPin className="mr-2 h-3.5 w-3.5" />
-              {b.name}
-              <span className="ml-2 text-xs text-muted-foreground">{b.code}</span>
-            </DropdownMenuItem>
-          ))}
+          {branchesLoading ? (
+            <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Cargando sucursales...
+            </div>
+          ) : options.length === 0 ? (
+            <div className="max-w-56 px-2 py-1.5 text-sm text-muted-foreground">
+              Aún no hay sucursales. Créalas en Configuración → Sucursales.
+            </div>
+          ) : (
+            options.map((b) => (
+              <DropdownMenuItem
+                key={b.code}
+                onClick={() => setBranch(b.code)}
+                className={branchCode === b.code ? 'bg-primary/10 text-primary' : ''}
+              >
+                <MapPin className="mr-2 h-3.5 w-3.5" />
+                {b.name}
+                <span className="ml-2 text-xs text-muted-foreground">{b.code}</span>
+              </DropdownMenuItem>
+            ))
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 

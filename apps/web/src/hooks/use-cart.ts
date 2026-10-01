@@ -24,13 +24,22 @@ interface CartState {
   updateQty: (productId: string, qty: number) => void;
   clearCart: () => void;
   setBranch: (code: string) => void;
+  /**
+   * Fija la sucursal activa si todavia no se eligio una valida.
+   * `codes` viene del backend (`GET /branches`) — nunca de una lista local.
+   */
+  ensureBranch: (codes: string[]) => void;
   setCashSession: (id: number) => void;
   setCustomer: (id: string | undefined) => void;
 }
 
+/**
+ * `null` en localStorage = el usuario nunca eligio sucursal (hay que poblarla
+ * desde el backend). `''` = el usuario eligio deliberadamente "Todas".
+ */
 function loadBranch(): string {
-  if (typeof window === 'undefined') return 'CEN01';
-  return localStorage.getItem('pos:branchCode') || 'CEN01';
+  if (typeof window === 'undefined') return '';
+  return localStorage.getItem('pos:branchCode') ?? '';
 }
 
 function loadItems(branchCode: string): CartItem[] {
@@ -101,6 +110,22 @@ export const useCartStore = create<CartState>((set, get) => {
       const items = loadItems(code);
       localStorage.setItem('pos:branchCode', code);
       set({ branchCode: code, items });
+    },
+
+    ensureBranch: (codes) => {
+      if (codes.length === 0) return;
+      const stored = typeof window === 'undefined' ? null : localStorage.getItem('pos:branchCode');
+      if (stored !== null) {
+        // '' = eleccion explicita de "Todas" (opcion de filtro, no una sucursal)
+        if (stored === '' || codes.includes(stored)) return;
+      }
+      // 'null' = nunca eligio; codigo desconocido = sucursal eliminada o de otra
+      // cuenta. Poblamos con la primera sucursal del negocio.
+      const fallback = codes[0];
+      if (!fallback) return;
+      const items = loadItems(fallback);
+      localStorage.setItem('pos:branchCode', fallback);
+      set({ branchCode: fallback, items });
     },
 
     setCashSession: (id) => set({ cashierSessionId: id }),
