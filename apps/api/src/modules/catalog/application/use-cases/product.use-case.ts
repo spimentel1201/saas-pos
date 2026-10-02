@@ -1,4 +1,5 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictError } from '../../../../shared/domain/errors/domain-error.js';
 import { CATEGORY_REPO, PRODUCT_REPO, TENANT_SCHEMA } from '../../catalog.tokens.js';
 import { Product } from '../../domain/entities/product.entity.js';
 import type { ProductDTO, ProductType } from '../../domain/entities/product.entity.js';
@@ -21,6 +22,8 @@ interface CreateProductInput {
   taxRate?: number;
   trackStock?: boolean;
   initialStock?: number;
+  /** Sucursal donde cargar el stock inicial (codigo, ej. CEN01). */
+  branchCode?: string;
   minStock?: number;
   maxStock?: number;
   imageUrl?: string;
@@ -88,13 +91,14 @@ export class ProductUseCases {
       }
     }
 
+    const type = ((dto.type as ProductType) ?? 'GOOD') as ProductType;
     const product = Product.create({
       tenantId,
       createdBy,
       name: dto.name,
       sku: sku.toString(),
       description: dto.description,
-      type: (dto.type as ProductType) ?? 'GOOD',
+      type,
       barcode: dto.barcode,
       categoryId: dto.categoryId,
       price: dto.price,
@@ -108,7 +112,39 @@ export class ProductUseCases {
       imagePublicId: dto.imagePublicId,
     });
 
-    return (await this.productRepo.save(product)).toDTO();
+    let initialBranchCode: string | undefined;
+    if (this.tracksStock(dto.trackStock, type)) {
+      initialBranchCode = await this.resolveInitialBranch(dto.branchCode);
+    }
+
+    return (await this.productRepo.save(product, { initialBranchCode })).toDTO();
+  }
+
+  /** Un producto consume stock solo si lo controla y no es servicio. */
+  private tracksStock(trackStock: boolean | undefined, type: ProductType): boolean {
+    return (trackStock ?? true) && type !== 'SERVICE';
+  }
+
+  /**
+   * Valida la sucursal destino del stock inicial y devuelve su codigo.
+   * Falla con 409 si el negocio no tiene sucursales activas o si la
+   * sucursal pedida no pertenece al negocio.
+   */
+  private async resolveInitialBranch(requested?: string): Promise<string> {
+    const codes = await this.productRepo.findActiveBranchCodes();
+    if (codes.length === 0) {
+      throw new ConflictError(
+        'El negocio no tiene sucursales activas. Crea una en Configuración › Sucursales antes de registrar productos con stock.',
+      );
+    }
+    if (requested && !codes.includes(requested)) {
+      throw new ConflictError(`La sucursal ${requested} no existe o no está activa en este negocio.`);
+    }
+    const first = codes[0];
+    if (!first) {
+      throw new ConflictError('El negocio no tiene sucursales activas.');
+    }
+    return requested ?? first;
   }
 
   async getById(id: string): Promise<ProductDTO> {
@@ -155,7 +191,8 @@ export class ProductUseCases {
       product.updateImage(dto.imagePublicId ?? null, dto.imageUrl ?? null);
     }
 
-    return (await this.productRepo.save(product)).toDTO();
+    const persistStockBounds = dto.minStock !== undefined || dto.maxStock !== undefined;
+    return (await this.productRepo.save(product, { persistStockBounds })).toDTO();
   }
 
   async changeStatus(

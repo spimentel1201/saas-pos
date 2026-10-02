@@ -14,17 +14,21 @@ import {
 } from '@/components/ui/select';
 import { useCreateProduct } from '@/hooks/queries/use-catalog';
 import { useCategories } from '@/hooks/queries/use-categories';
+import { useBranches } from '@/hooks/queries/use-config';
+import { useCartStore } from '@/hooks/use-cart';
 import { ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
 import { ArrowLeft, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function NewProductPage() {
   const router = useRouter();
   const createProduct = useCreateProduct();
   const { data: categories } = useCategories();
+  const { data: branches, isLoading: branchesLoading } = useBranches();
+  const posBranchCode = useCartStore((s) => s.branchCode);
   const tenantSlug = useAuthStore((s) => s.tenantSlug);
 
   const [form, setForm] = useState({
@@ -36,15 +40,26 @@ export default function NewProductPage() {
     price: '',
     cost: '',
     taxRate: '0.18',
-    type: 'GOOD' as const,
+    type: 'GOOD' as 'GOOD' | 'SERVICE' | 'BUNDLE',
     trackStock: true,
     initialStock: '',
     minStock: '',
     maxStock: '',
+    branchCode: '',
   });
 
   const [image, setImage] = useState<{ url: string; publicId: string } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const branchCodes = (branches ?? []).map((b) => b.code);
+  const needsBranch = form.trackStock && form.type !== 'SERVICE';
+
+  // Preseleccionar la sucursal activa del POS si existe entre las del negocio
+  useEffect(() => {
+    if (!needsBranch || form.branchCode || branchCodes.length === 0) return;
+    const preferred = branchCodes.includes(posBranchCode) ? posBranchCode : branchCodes[0];
+    if (preferred) setForm((prev) => ({ ...prev, branchCode: preferred }));
+  }, [needsBranch, form.branchCode, branchCodes, posBranchCode]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -52,6 +67,9 @@ export default function NewProductPage() {
     if (!form.name.trim()) newErrors.name = 'El nombre es requerido';
     if (!form.sku.trim()) newErrors.sku = 'El SKU es requerido';
     if (!form.price || Number(form.price) <= 0) newErrors.price = 'El precio debe ser mayor a 0';
+    if (needsBranch && !form.branchCode) {
+      newErrors.branchCode = 'Selecciona la sucursal donde cargar el stock inicial';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -74,9 +92,12 @@ export default function NewProductPage() {
     if (form.categoryId) payload.categoryId = form.categoryId;
     if (form.cost) payload.cost = Number(form.cost);
     if (form.taxRate) payload.taxRate = Number(form.taxRate);
-    if (form.trackStock && form.initialStock) payload.initialStock = Number(form.initialStock);
-    if (form.trackStock && form.minStock) payload.minStock = Number(form.minStock);
-    if (form.trackStock && form.maxStock) payload.maxStock = Number(form.maxStock);
+    if (needsBranch) {
+      payload.branchCode = form.branchCode;
+      if (form.initialStock) payload.initialStock = Number(form.initialStock);
+      if (form.minStock) payload.minStock = Number(form.minStock);
+      if (form.maxStock) payload.maxStock = Number(form.maxStock);
+    }
     if (image) {
       payload.imageUrl = image.url;
       payload.imagePublicId = image.publicId;
@@ -277,6 +298,46 @@ export default function NewProductPage() {
 
               {form.trackStock && (
                 <>
+                  <div className="space-y-2">
+                    <Label htmlFor="branchCode">Sucursal del stock inicial</Label>
+                    <Select
+                      value={form.branchCode}
+                      onValueChange={(v: string) => setForm({ ...form, branchCode: v })}
+                      disabled={form.type === 'SERVICE'}
+                    >
+                      <SelectTrigger id="branchCode">
+                        <SelectValue
+                          placeholder={
+                            branchesLoading
+                              ? 'Cargando sucursales…'
+                              : branchCodes.length === 0
+                                ? 'Sin sucursales'
+                                : 'Selecciona una sucursal'
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {branchCodes.map((code) => (
+                          <SelectItem key={code} value={code}>
+                            {code}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {needsBranch && branches?.length === 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Este negocio aun no tiene sucursales. Crea una en{' '}
+                        <Link href="/app/config" className="underline">
+                          Configuracion
+                        </Link>{' '}
+                        para poder registrar productos con stock.
+                      </p>
+                    )}
+                    {errors.branchCode && (
+                      <p className="text-xs text-destructive">{errors.branchCode}</p>
+                    )}
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="initialStock">Stock inicial</Label>
                     <Input

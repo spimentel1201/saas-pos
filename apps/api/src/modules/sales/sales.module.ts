@@ -1,5 +1,6 @@
 ﻿import { Module } from '@nestjs/common';
 import { TenantContextModule } from '../../shared/infrastructure/multi-tenant/tenant-context.module.js';
+import { CatalogModule } from '../catalog/catalog.module.js';
 import { InventoryModule } from '../inventory/inventory.module.js';
 import { SalesUseCases } from './application/use-cases/sales.use-case.js';
 import { SalesController } from './infrastructure/http/sales.controller.js';
@@ -7,7 +8,7 @@ import { PrismaSaleRepository } from './infrastructure/repositories/prisma-sale.
 import { SALE_REPO, TENANT_SCHEMA } from './sales.tokens.js';
 
 @Module({
-  imports: [TenantContextModule, InventoryModule],
+  imports: [TenantContextModule, InventoryModule, CatalogModule],
   controllers: [SalesController],
   providers: [
     SalesUseCases,

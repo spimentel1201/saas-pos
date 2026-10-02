@@ -1,5 +1,6 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { ulid } from 'ulid';
+import { ProductUseCases } from '../../../catalog/application/use-cases/product.use-case.js';
 import { InventoryUseCases } from '../../../inventory/application/use-cases/inventory.use-case.js';
 import { type PaymentMethod, SaleItem } from '../../domain/entities/sale.entity.js';
 import { computeSaleTotals } from '../../domain/services/sale-calculator.service.js';
@@ -18,6 +19,7 @@ export class SalesUseCases {
     @Inject(SALE_REPO) private readonly saleRepo: SaleRepositoryPort,
     @Inject(TENANT_SCHEMA) private readonly tenantSchema: string,
     private readonly inventory: InventoryUseCases,
+    private readonly products: ProductUseCases,
   ) {}
 
   async checkout(
@@ -75,8 +77,12 @@ export class SalesUseCases {
       );
     }
 
-    // Verificar stock disponible
+    // Verificar stock disponible. Los servicios y los productos con
+    // trackStock=false no consumen inventario, se venden sin validar existencias.
     for (const item of saleItems) {
+      const product = await this.products.getById(item.productId).catch(() => null);
+      if (product && (!product.trackStock || product.type === 'SERVICE')) continue;
+
       const stock = await this.inventory
         .getByBranchProduct(dto.branchCode, item.productId)
         .catch(() => null);

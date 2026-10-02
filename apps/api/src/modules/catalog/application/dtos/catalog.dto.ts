@@ -74,6 +74,14 @@ export class CreateProductDto {
   @Min(0)
   initialStock?: number;
 
+  @ApiPropertyOptional({
+    example: 'CEN01',
+    description: 'Sucursal donde cargar el stock inicial. Si se omite se usa la primera activa.',
+  })
+  @IsOptional()
+  @IsString()
+  branchCode?: string;
+
   @ApiPropertyOptional({ example: 5, default: 0 })
   @IsOptional()
   @Type(() => Number)

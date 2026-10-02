@@ -57,7 +57,10 @@ export default function PosPage() {
         }
       }
 
-      const stock = stockMap.get(p.id) ?? p.stock;
+      // Con la sucursal activa, el stock real es el de esa sucursal:
+      // si no hay fila en inventory_stocks es 0, no el total del catalogo.
+      const stock = stockData ? (stockMap.get(p.id) ?? 0) : p.stock;
+      const tracksStock = p.trackStock && p.type !== 'SERVICE';
       return {
         id: p.id,
         name: p.name,
@@ -67,7 +70,7 @@ export default function PosPage() {
         imageUrl,
         category: p.categoryId,
         stock,
-        isOutOfStock: p.trackStock && stock <= 0,
+        isOutOfStock: tracksStock && stock <= 0,
       };
     });
   }, [productsData, stockData]);

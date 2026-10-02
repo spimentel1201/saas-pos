@@ -79,7 +79,15 @@ export class PrismaSaleRepository implements SaleRepositoryPort {
           item.total,
         );
 
-        // Restar stock
+        // Restar stock solo si el producto controla inventario.
+        // Servicios / trackStock=false no deben crear filas en inventory_stocks.
+        const tracked = (await tx.$queryRawUnsafe(
+          'SELECT track_stock, type FROM products WHERE id = $1',
+          item.productId,
+        )) as { track_stock: boolean; type: string }[];
+        const product = tracked[0];
+        if (product && (!product.track_stock || product.type === 'SERVICE')) continue;
+
         await tx.$executeRawUnsafe(
           `INSERT INTO inventory_stocks (branch_code, product_id, qty, reserved, min_qty, max_qty, avg_cost, version, updated_at)
            VALUES ($1, $2, 0, 0, 0, 0, 0, 1, NOW())

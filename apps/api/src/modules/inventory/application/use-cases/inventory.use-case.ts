@@ -1,5 +1,6 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { ulid } from 'ulid';
+import { ConflictError } from '../../../../shared/domain/errors/domain-error.js';
 import {
   type MovementDTO,
   Stock,
@@ -69,7 +70,8 @@ export class InventoryUseCases {
     if (dto.newQty === undefined && dto.delta === undefined) {
       throw new BadRequestException('Se requiere newQty o delta');
     }
-    const stock = await this.ensureOrCreate(branchCode, productId);
+    // ensureOrCreate valida que la sucursal pertenezca al negocio
+    let stock = await this.ensureOrCreate(branchCode, productId);
 
     let delta: number;
     if (dto.delta !== undefined) {
@@ -80,7 +82,9 @@ export class InventoryUseCases {
 
     if (delta !== 0) {
       stock.applyDelta(delta);
-      await this.stockRepo.upsert(stock);
+      // upsert devuelve la fila con su id real (0 en filas nuevas).
+      // Capturarlo es obligatorio: addMovement necesita ese id por la FK.
+      stock = await this.stockRepo.upsert(stock);
       await this.stockRepo.addMovement({
         stockId: stock.id,
         type: 'ADJUSTMENT',
@@ -93,7 +97,7 @@ export class InventoryUseCases {
 
     if (dto.minQty !== undefined || dto.maxQty !== undefined) {
       stock.updateMinMax(dto.minQty ?? stock.minQty, dto.maxQty ?? stock.maxQty);
-      await this.stockRepo.upsert(stock);
+      stock = await this.stockRepo.upsert(stock);
     }
 
     return stock.toDTO();
@@ -109,6 +113,10 @@ export class InventoryUseCases {
       items: TransferItem[];
     },
   ): Promise<TransferDTO> {
+    // Las transferencias solo pueden moverse entre sucursales del negocio
+    await this.requireBranch(dto.fromBranch);
+    await this.requireBranch(dto.toBranch);
+
     // Validar stock suficiente en sucursal origen
     for (const item of dto.items) {
       const stock = await this.stockRepo.findByBranchProduct(dto.fromBranch, item.productId);
@@ -167,11 +175,11 @@ export class InventoryUseCases {
     await this.transferRepo.save(transfer);
 
     for (const item of transfer.items) {
-      const stock = await this.ensureOrCreate(transfer.toBranch, item.productId);
+      let stock = await this.ensureOrCreate(transfer.toBranch, item.productId);
       const unitCost = unitCosts?.[item.productId] ?? stock.avgCost;
       const newAvgCost = computeWeightedAvgCost(stock.qty, stock.avgCost, item.qty, unitCost);
       stock.applyDelta(item.qty, newAvgCost);
-      await this.stockRepo.upsert(stock);
+      stock = await this.stockRepo.upsert(stock);
       await this.stockRepo.addMovement({
         stockId: stock.id,
         type: 'TRANSFER',
@@ -200,7 +208,15 @@ export class InventoryUseCases {
 
   // ---- Internos ----
 
+  /** Rechaza sucursales que no pertenezcan al negocio (o inactivas). */
+  private async requireBranch(branchCode: string): Promise<void> {
+    if (branchCode && !(await this.stockRepo.branchExists(branchCode))) {
+      throw new ConflictError(`La sucursal ${branchCode} no existe o no está activa en este negocio.`);
+    }
+  }
+
   private async ensureOrCreate(branchCode: string, productId: string): Promise<Stock> {
+    await this.requireBranch(branchCode);
     let stock = await this.stockRepo.findByBranchProduct(branchCode, productId);
     if (!stock) {
       stock = Stock.rehydrate({
