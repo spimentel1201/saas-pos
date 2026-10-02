@@ -7,9 +7,9 @@
  * Proceso separado de la API para no afectar la latencia del POS.
  */
 import { QueueEvents, Worker } from 'bullmq';
-import IORedis from 'ioredis';
+import { Redis } from 'ioredis';
 
-const connection = new IORedis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
+const connection = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
   maxRetriesPerRequest: null,
 });
 

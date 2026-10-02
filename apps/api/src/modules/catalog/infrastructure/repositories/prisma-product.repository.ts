@@ -5,6 +5,7 @@ import {
   PaginatedResult,
   ProductFilter,
   ProductRepositoryPort,
+  type SaveProductOptions,
 } from '../../application/ports/catalog.repository.port.js';
 import { TENANT_SCHEMA } from '../../catalog.tokens.js';
 import { Product } from '../../domain/entities/product.entity.js';
@@ -17,15 +18,15 @@ export class PrismaProductRepository implements ProductRepositoryPort {
     private readonly tenantPrisma: TenantPrismaService,
   ) {}
 
-  async save(product: Product): Promise<Product> {
+  async save(product: Product, options?: SaveProductOptions): Promise<Product> {
     const dto = product.toDTO();
     return this.tenantPrisma.withTenant(async (tx) => {
       const existing = await tx.$queryRawUnsafe<{ id: string }[]>(
         'SELECT id FROM products WHERE id = $1',
         dto.id,
       );
+      const primaryImage = dto.images[0];
       if (existing.length > 0) {
-        const primaryImage = dto.images[0];
         await tx.$executeRawUnsafe(
           `UPDATE products SET name = $1, description = $2, sku = $3, barcode = $4, category_id = $5,
            price = $6, cost = $7, type = $8, track_stock = $9, is_active = $10,
@@ -45,8 +46,19 @@ export class PrismaProductRepository implements ProductRepositoryPort {
           primaryImage?.url ?? null,
           dto.id,
         );
+
+        // min/max viven en inventory_stocks, no en products: propagarlos a todas
+        // las sucursales que ya tengan fila del producto cuando el usuario los edita.
+        if (options?.persistStockBounds) {
+          await tx.$executeRawUnsafe(
+            `UPDATE inventory_stocks SET min_qty = $1, max_qty = $2, updated_at = NOW()
+             WHERE product_id = $3`,
+            dto.minStock ?? 0,
+            dto.maxStock ?? 0,
+            dto.id,
+          );
+        }
       } else {
-        const primaryImage = dto.images[0];
         await tx.$executeRawUnsafe(
           `INSERT INTO products (id, sku, barcode, name, description, category_id,
            cost, price, type, track_stock, is_active, image_public_id, image_url, created_at, updated_at)
@@ -66,25 +78,44 @@ export class PrismaProductRepository implements ProductRepositoryPort {
           primaryImage?.url ?? null,
         );
 
-        if (dto.trackStock && dto.stock > 0) {
-          const branches = await tx.$queryRawUnsafe<{ code: string }[]>(
-            'SELECT code FROM branches WHERE active = true',
+        // Stock inicial: solo en la sucursal elegida (resuelta en el caso de uso),
+        // no en todas. Registra el movimiento de ajuste de altas.
+        const branchCode = options?.initialBranchCode;
+        if (branchCode && dto.type !== 'SERVICE' && dto.trackStock) {
+          const inserted = await tx.$queryRawUnsafe<{ id: bigint }[]>(
+            `INSERT INTO inventory_stocks (branch_code, product_id, qty, reserved, min_qty, max_qty, avg_cost, version, updated_at)
+             VALUES ($1, $2, $3, 0, $4, $5, 0, 1, NOW())
+             ON CONFLICT (branch_code, product_id) DO NOTHING
+             RETURNING id`,
+            branchCode,
+            dto.id,
+            dto.stock,
+            dto.minStock ?? 0,
+            dto.maxStock ?? 0,
           );
-          for (const branch of branches) {
+          const stockId = inserted[0]?.id;
+          if (stockId !== undefined && dto.stock > 0) {
             await tx.$executeRawUnsafe(
-              `INSERT INTO inventory_stocks (branch_code, product_id, qty, reserved, min_qty, max_qty, avg_cost, version, updated_at)
-               VALUES ($1, $2, $3, 0, $4, $5, 0, 1, NOW())
-               ON CONFLICT (branch_code, product_id) DO NOTHING`,
-              branch.code,
-              dto.id,
+              `INSERT INTO inventory_movements (stock_id, type, delta, reason, ref, branch_code, user_id, created_at)
+               VALUES ($1, 'ADJUSTMENT', $2, 'Stock inicial', NULL, $3, $4, NOW())`,
+              Number(stockId),
               dto.stock,
-              dto.minStock ?? 0,
-              dto.maxStock ?? 0,
+              branchCode,
+              dto.createdBy || 'system',
             );
           }
         }
       }
       return product;
+    });
+  }
+
+  async findActiveBranchCodes(): Promise<string[]> {
+    return this.tenantPrisma.withTenant(async (tx) => {
+      const rows = await tx.$queryRawUnsafe<{ code: string }[]>(
+        'SELECT code FROM branches WHERE active = true ORDER BY code',
+      );
+      return rows.map((r) => r.code);
     });
   }
 

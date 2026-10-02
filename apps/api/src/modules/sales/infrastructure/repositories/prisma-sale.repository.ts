@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { TenantPrismaService } from '../../../../shared/infrastructure/prisma/tenant-prisma.service.js';
 import type {
   CheckoutInput,
@@ -79,7 +79,15 @@ export class PrismaSaleRepository implements SaleRepositoryPort {
           item.total,
         );
 
-        // Restar stock
+        // Restar stock solo si el producto controla inventario.
+        // Servicios / trackStock=false no deben crear filas en inventory_stocks.
+        const tracked = (await tx.$queryRawUnsafe(
+          'SELECT track_stock, type FROM products WHERE id = $1',
+          item.productId,
+        )) as { track_stock: boolean; type: string }[];
+        const product = tracked[0];
+        if (product && (!product.track_stock || product.type === 'SERVICE')) continue;
+
         await tx.$executeRawUnsafe(
           `INSERT INTO inventory_stocks (branch_code, product_id, qty, reserved, min_qty, max_qty, avg_cost, version, updated_at)
            VALUES ($1, $2, 0, 0, 0, 0, 0, 1, NOW())
@@ -137,6 +145,24 @@ export class PrismaSaleRepository implements SaleRepositoryPort {
             `Venta ${input.saleId} (${payment.method})`,
             input.branchCode,
           );
+        } else {
+          // Descontar del saldo de crédito del cliente (misma transacción).
+          // Si no alcanza el saldo, 0 filas afectadas -> rollback de toda la venta.
+          if (!input.customerId) {
+            throw new BadRequestException('El pago con crédito requiere seleccionar un cliente');
+          }
+          const affected = await tx.$executeRawUnsafe(
+            `UPDATE customers
+                SET credit_balance = credit_balance - $1, updated_at = now()
+              WHERE id = $2
+                AND active = true
+                AND credit_balance >= $1`,
+            payment.amount,
+            input.customerId,
+          );
+          if (affected === 0) {
+            throw new BadRequestException('Saldo de crédito insuficiente para cubrir el pago');
+          }
         }
       }
 

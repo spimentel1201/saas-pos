@@ -29,6 +29,7 @@ import {
   useUpdateTax,
   useUpdateTicketHeader,
 } from '@/hooks/queries/use-config';
+import { ApiError } from '@/lib/api';
 import { Building2, Edit, MapPin, Plus, Receipt, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -106,18 +107,33 @@ function TaxForm({ tax, onClose }: { tax?: Tax; onClose: () => void }) {
   const isEdit = !!tax;
 
   const [name, setName] = useState(tax?.name ?? '');
-  const [rate, setRate] = useState(tax?.rate?.toString() ?? '0.18');
+  // Se muestra siempre como porcentaje (18 = 18%); el backend guarda 0.18
+  const [rate, setRate] = useState(
+    tax?.rate != null ? String(Math.round(tax.rate * 10000) / 100) : '18',
+  );
   const [type, setType] = useState<'PERCENT' | 'EXEMPT' | 'FIXED'>(tax?.type ?? 'PERCENT');
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const rateNum = Number.parseFloat(rate);
-    if (isEdit) {
-      await update.mutateAsync({ id: tax.id, data: { name, rate: rateNum } });
-    } else {
-      await create.mutateAsync({ name, rate: rateNum, type });
+    setError(null);
+    const percent = Number.parseFloat(rate);
+    if (Number.isNaN(percent) || percent < 0) {
+      setError('Ingresa una tasa valida');
+      return;
     }
-    onClose();
+    // El backend almacena la tasa como fraccion para PERCENT (18% => 0.18)
+    const rateNum = type === 'FIXED' ? percent : Math.round(percent) / 100;
+    try {
+      if (isEdit) {
+        await update.mutateAsync({ id: tax.id, data: { name, rate: rateNum } });
+      } else {
+        await create.mutateAsync({ name, rate: rateNum, type });
+      }
+      onClose();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.detail : 'No se pudo guardar el impuesto');
+    }
   };
 
   const isPending = create.isPending || update.isPending;
@@ -136,18 +152,18 @@ function TaxForm({ tax, onClose }: { tax?: Tax; onClose: () => void }) {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label htmlFor="tax-rate">Tasa *</Label>
+          <Label htmlFor="tax-rate">Tasa (%) *</Label>
           <Input
             id="tax-rate"
             type="number"
             step="0.01"
             min="0"
-            max="1"
+            max="100"
             value={rate}
             onChange={(e) => setRate(e.target.value)}
             required
           />
-          <p className="text-[10px] text-muted-foreground">0.18 = 18%</p>
+          <p className="text-[10px] text-muted-foreground">18 = 18%</p>
         </div>
         <div className="space-y-2">
           <Label>Tipo</Label>
@@ -167,6 +183,7 @@ function TaxForm({ tax, onClose }: { tax?: Tax; onClose: () => void }) {
           </Select>
         </div>
       </div>
+      {error && <p className="text-sm text-destructive">{error}</p>}
       <div className="flex gap-3 pt-2">
         <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
           Cancelar

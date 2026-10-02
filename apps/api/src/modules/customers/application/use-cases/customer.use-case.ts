@@ -1,4 +1,5 @@
-import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ValidationError } from '../../../../shared/domain/errors/domain-error.js';
 import { CUSTOMER_REPO } from '../../customers.tokens.js';
 import { Customer } from '../../domain/entities/customer.entity.js';
 import type {
@@ -42,6 +43,8 @@ interface UpdateCustomerInput {
 
 @Injectable()
 export class CustomerUseCases {
+  private readonly logger = new Logger(CustomerUseCases.name);
+
   constructor(@Inject(CUSTOMER_REPO) private readonly customerRepo: CustomerRepositoryPort) {}
 
   async create(userId: string, dto: CreateCustomerInput): Promise<CustomerDTO> {
@@ -109,11 +112,18 @@ export class CustomerUseCases {
     return this.customerRepo.searchPos(query, limit ?? 10);
   }
 
-  async adjustCredit(id: string, amount: number): Promise<CustomerDTO> {
+  async adjustCredit(id: string, amount: number, reason?: string): Promise<CustomerDTO> {
     const customer = await this.customerRepo.findById(id);
     if (!customer) throw new NotFoundException('Cliente no encontrado');
-    customer.adjustCredit(amount);
+    try {
+      customer.adjustCredit(amount);
+    } catch (e) {
+      throw new ValidationError(e instanceof Error ? e.message : 'Credito invalido');
+    }
     const saved = await this.customerRepo.save(customer);
+    const { creditBalance } = saved.toDTO();
+    const motivo = reason ? ` motivo="${reason}"` : '';
+    this.logger.log(`Ajuste credito cliente=${id} monto=${amount} saldo=${creditBalance}${motivo}`);
     return saved.toDTO();
   }
 

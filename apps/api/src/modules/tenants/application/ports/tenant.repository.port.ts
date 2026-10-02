@@ -26,6 +26,12 @@ export interface TenantRepositoryPort {
   findById(id: string): Promise<Tenant | null>;
   findBranchByCode(tenantId: string, code: string): Promise<BranchInfo | null>;
   createBranch(tenantId: string, name: string, code: string): Promise<BranchInfo>;
+  /**
+   * Garantiza que la sucursal exista tambien en `<schema>.branches`.
+   * Idempotente (ON CONFLICT DO NOTHING): se usa tanto al crear como para
+   * reparar sucursales altas antes del dual-write o una replica fallida.
+   */
+  ensureBranchInTenantSchema(name: string, code: string): Promise<void>;
   listBranches(tenantId: string): Promise<BranchInfo[]>;
   countBranches(tenantId: string): Promise<number>;
   countProducts(): Promise<number>;

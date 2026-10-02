@@ -10,6 +10,8 @@ export interface StockRepositoryPort {
   findByBranch(branchCode: string): Promise<Stock[]>;
   findByProduct(productId: string): Promise<Stock[]>;
   findLowStock(branchCode?: string): Promise<Stock[]>;
+  /** True si la sucursal existe (activa) en el schema tenant de este negocio. */
+  branchExists(branchCode: string): Promise<boolean>;
   upsert(stock: Stock): Promise<Stock>;
   listMovements(stockId: number, limit?: number): Promise<Movement[]>;
   addMovement(input: {

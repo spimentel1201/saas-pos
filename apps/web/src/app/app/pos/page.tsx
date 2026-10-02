@@ -9,6 +9,7 @@ import { useProducts } from '@/hooks/queries/use-catalog';
 import { useCategories } from '@/hooks/queries/use-categories';
 import { useStockByBranch } from '@/hooks/queries/use-inventory';
 import { useCartStore } from '@/hooks/use-cart';
+import { productImageUrl } from '@/lib/product-image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export default function PosPage() {
@@ -45,19 +46,12 @@ export default function PosPage() {
     }
 
     return productsData.data.map((p) => {
-      let imageUrl: string | undefined;
-      if (Array.isArray(p.images) && p.images.length > 0) {
-        const img = p.images[0] as { url?: string; publicId?: string };
-        imageUrl = img?.url;
-      }
-      if (!imageUrl) {
-        const pAny = p as unknown as Record<string, unknown>;
-        if (typeof pAny.imageUrl === 'string') {
-          imageUrl = pAny.imageUrl;
-        }
-      }
+      const imageUrl = productImageUrl(p);
 
-      const stock = stockMap.get(p.id) ?? p.stock;
+      // Con la sucursal activa, el stock real es el de esa sucursal:
+      // si no hay fila en inventory_stocks es 0, no el total del catalogo.
+      const stock = stockData ? (stockMap.get(p.id) ?? 0) : p.stock;
+      const tracksStock = p.trackStock && p.type !== 'SERVICE';
       return {
         id: p.id,
         name: p.name,
@@ -67,7 +61,7 @@ export default function PosPage() {
         imageUrl,
         category: p.categoryId,
         stock,
-        isOutOfStock: p.trackStock && stock <= 0,
+        isOutOfStock: tracksStock && stock <= 0,
       };
     });
   }, [productsData, stockData]);

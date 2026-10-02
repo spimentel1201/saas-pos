@@ -48,7 +48,12 @@ export class OnboardingUseCases {
     const t = TenantContext.require;
 
     const existing = await this.repo.findBranchByCode(t.id, dto.code);
-    if (existing) return existing.toDTO();
+    if (existing) {
+      // Reconciliacion: sucursales altas antes del dual-write, o una replica
+      // al schema tenant que fallo en el primer intento.
+      await this.repo.ensureBranchInTenantSchema(existing.name, existing.code);
+      return existing.toDTO();
+    }
 
     const branchCount = await this.repo.countBranches(t.id);
     try {

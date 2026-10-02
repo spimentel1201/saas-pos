@@ -25,8 +25,23 @@ export interface PaginatedResult<T> {
   totalPages: number;
 }
 
+export interface SaveProductOptions {
+  /**
+   * Sucursal donde cargar el stock inicial. Solo aplica al alta del producto.
+   * Si no se indica, el repository elige la primera sucursal activa.
+   */
+  initialBranchCode?: string;
+  /**
+   * Propagar `minStock`/`maxStock` del producto a `inventory_stocks`.
+   * Solo en actualizacion, para no pisar umbrales por sucursal en el alta.
+   */
+  persistStockBounds?: boolean;
+}
+
 export interface ProductRepositoryPort {
-  save(product: Product): Promise<Product>;
+  save(product: Product, options?: SaveProductOptions): Promise<Product>;
+  /** Codigos de las sucursales activas del tenant (schema tenant, no la tabla compartida). */
+  findActiveBranchCodes(): Promise<string[]>;
   findById(id: string): Promise<Product | null>;
   findBySku(sku: string): Promise<Product | null>;
   findByBarcode(barcode: string): Promise<Product | null>;

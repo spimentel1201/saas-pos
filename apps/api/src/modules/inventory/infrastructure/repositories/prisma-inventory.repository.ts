@@ -73,6 +73,17 @@ export class PrismaStockRepository implements StockRepositoryPort {
     });
   }
 
+  async branchExists(branchCode: string): Promise<boolean> {
+    // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries on tx client
+    return this.tenantPrisma.withTenant(async (tx: any) => {
+      const rows = await tx.$queryRawUnsafe(
+        'SELECT code FROM branches WHERE code = $1 AND active = true',
+        branchCode,
+      );
+      return rows.length > 0;
+    });
+  }
+
   async upsert(stock: Stock): Promise<Stock> {
     const dto = stock.toDTO();
     // biome-ignore lint/suspicious/noExplicitAny: raw SQL queries on tx client
