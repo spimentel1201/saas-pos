@@ -125,9 +125,14 @@ export class UserController {
   @ApiOperation({ summary: 'Invitar usuario al tenant (solo OWNER/ADMIN)' })
   @ApiBody({ type: InviteUserDto })
   async invite(
-    @CurrentUser() currentUser: { sub: string; tenantId: string },
+    @CurrentUser() currentUser: { sub: string; tenantId: string; role: string },
     @Body() dto: InviteUserDto,
   ) {
-    return this.userUseCases.invite(currentUser.tenantId, dto.email, dto.role ?? 'CASHIER');
+    return this.userUseCases.invite(
+      currentUser.tenantId,
+      dto.email,
+      dto.role ?? 'CASHIER',
+      currentUser.role as 'OWNER' | 'ADMIN' | 'MANAGER' | 'CASHIER',
+    );
   }
 }

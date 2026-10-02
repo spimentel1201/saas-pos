@@ -156,7 +156,14 @@ export class UserUseCases {
     await this.userRepo.removeFromTenant(targetUserId, tenantId);
   }
 
-  async invite(tenantId: string, email: string, role: Role): Promise<UserListItemDTO> {
-    return this.userRepo.inviteToTenant(tenantId, email, role ?? 'CASHIER');
+  async invite(
+    tenantId: string,
+    email: string,
+    role: Role,
+    actorRole: Role,
+  ): Promise<UserListItemDTO> {
+    const targetRole = role ?? 'CASHIER';
+    this.assertCanManage(actorRole, targetRole);
+    return this.userRepo.inviteToTenant(tenantId, email, targetRole);
   }
 }

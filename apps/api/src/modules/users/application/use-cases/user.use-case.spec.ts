@@ -208,10 +208,42 @@ describe('UserUseCases', () => {
 
       vi.mocked(mockUserRepo.inviteToTenant).mockResolvedValue(mockInvited);
 
-      const result = await userUseCases.invite(mockTenantId, 'new@test.com', 'CASHIER');
+      const result = await userUseCases.invite(mockTenantId, 'new@test.com', 'CASHIER', 'OWNER');
 
       expect(result.email).toBe('new@test.com');
       expect(result.role).toBe('CASHIER');
+      expect(mockUserRepo.inviteToTenant).toHaveBeenCalledWith(
+        mockTenantId,
+        'new@test.com',
+        'CASHIER',
+      );
+    });
+
+    it('allows an ADMIN to invite a CASHIER', async () => {
+      vi.mocked(mockUserRepo.inviteToTenant).mockResolvedValue({
+        userId: 'new_user',
+        tenantId: mockTenantId,
+        role: 'CASHIER',
+        name: 'New User',
+        email: 'new@test.com',
+        createdAt: new Date(),
+      });
+
+      const result = await userUseCases.invite(mockTenantId, 'new@test.com', 'CASHIER', 'ADMIN');
+
+      expect(result.role).toBe('CASHIER');
+    });
+
+    it('throws ForbiddenException when inviting a role equal or higher than the actor', async () => {
+      await expect(
+        userUseCases.invite(mockTenantId, 'admin@test.com', 'ADMIN', 'ADMIN'),
+      ).rejects.toThrow(ForbiddenException);
+
+      await expect(
+        userUseCases.invite(mockTenantId, 'owner@test.com', 'OWNER', 'ADMIN'),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(mockUserRepo.inviteToTenant).not.toHaveBeenCalled();
     });
   });
 
