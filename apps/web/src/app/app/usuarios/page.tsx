@@ -321,7 +321,7 @@ export default function UsuariosPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <p className="truncate text-sm font-medium">
-                        {user.email}
+                        {user.name || user.email}
                         {isSelf && <span className="ml-1 text-xs text-muted-foreground">(tú)</span>}
                       </p>
                       <span
@@ -334,8 +334,13 @@ export default function UsuariosPage() {
                         {roleConfig.label}
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {user.createdAt ? `Desde ${datetime(user.createdAt)}` : ''}
+                    <p className="truncate text-xs text-muted-foreground">
+                      {[
+                        user.name ? user.email : null,
+                        user.createdAt ? `Desde ${datetime(user.createdAt)}` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
                     </p>
                   </div>
 
@@ -404,7 +409,10 @@ export default function UsuariosPage() {
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
                 Cambiar rol de{' '}
-                <span className="font-semibold text-foreground">{changeRoleUser.email}</span>
+                <span className="font-semibold text-foreground">
+                  {changeRoleUser.name ? `${changeRoleUser.name} · ` : ''}
+                  {changeRoleUser.email}
+                </span>
               </p>
               <div className="space-y-2">
                 <Label>Nuevo rol</Label>
@@ -443,8 +451,11 @@ export default function UsuariosPage() {
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
               ¿Eliminar a{' '}
-              <span className="font-semibold text-foreground">{removeConfirm?.email}</span> del
-              equipo?
+              <span className="font-semibold text-foreground">
+                {removeConfirm ? (removeConfirm.name ? `${removeConfirm.name} · ` : '') : ''}
+                {removeConfirm?.email}
+              </span>{' '}
+              del equipo?
             </p>
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1" onClick={() => setRemoveConfirm(null)}>

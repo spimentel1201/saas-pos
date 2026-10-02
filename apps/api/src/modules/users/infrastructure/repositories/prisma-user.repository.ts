@@ -16,7 +16,8 @@ export class PrismaUserRepository implements UserRepositoryPort {
     // biome-ignore lint/suspicious/noExplicitAny: raw SQL on shared schema
     const rows = (await this.prisma.$queryRawUnsafe(
       `SELECT tu."userId", tu."tenantId", tu.role,
-              u.name, u.email, tu."tenantId" as "tenantIdRaw"
+              u.name, u.email, u."createdAt",
+              tu."tenantId" as "tenantIdRaw"
        FROM "TenantUser" tu
        JOIN "User" u ON u.id = tu."userId"
        WHERE tu."tenantId" = $1
@@ -29,7 +30,7 @@ export class PrismaUserRepository implements UserRepositoryPort {
       role: r.role as Role,
       name: r.name,
       email: r.email,
-      createdAt: new Date(),
+      createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),
     }));
   }
 
@@ -37,7 +38,7 @@ export class PrismaUserRepository implements UserRepositoryPort {
     // biome-ignore lint/suspicious/noExplicitAny: raw SQL on shared schema
     const rows = (await this.prisma.$queryRawUnsafe(
       `SELECT tu."userId", tu."tenantId", tu.role,
-              u.name, u.email
+              u.name, u.email, u."createdAt"
        FROM "TenantUser" tu
        JOIN "User" u ON u.id = tu."userId"
        WHERE tu."userId" = $1 AND tu."tenantId" = $2`,
@@ -52,7 +53,7 @@ export class PrismaUserRepository implements UserRepositoryPort {
       role: r.role as Role,
       name: r.name,
       email: r.email,
-      createdAt: new Date(),
+      createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),
     };
   }
 
@@ -78,7 +79,7 @@ export class PrismaUserRepository implements UserRepositoryPort {
 
   async inviteToTenant(tenantId: string, email: string, role: Role): Promise<TenantUserInfo> {
     const user = (await this.prisma.$queryRawUnsafe(
-      `SELECT id, name FROM "User" WHERE email = $1`,
+      `SELECT id, name, "createdAt" FROM "User" WHERE email = $1`,
       email,
     )) as any[];
     if (user.length === 0 || !user[0]) {
@@ -107,7 +108,7 @@ export class PrismaUserRepository implements UserRepositoryPort {
       role,
       name: user[0].name,
       email,
-      createdAt: new Date(),
+      createdAt: user[0].createdAt ? new Date(user[0].createdAt) : new Date(),
     };
   }
 
