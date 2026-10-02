@@ -39,7 +39,7 @@ function getAllowedPaths(role: string | null): string[] {
     case 'OWNER':
       return ALL_PATHS;
     case 'ADMIN':
-      return ALL_PATHS.filter((p) => p !== '/app/config');
+      return ALL_PATHS.filter((p) => p !== '/app/config' && p !== '/app/usuarios');
     case 'MANAGER':
       return ALL_PATHS.filter((p) => p !== '/app/config' && p !== '/app/usuarios');
     case 'CASHIER':

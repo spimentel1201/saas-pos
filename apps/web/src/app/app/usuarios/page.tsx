@@ -263,7 +263,7 @@ function TemporaryPassword({ user, onClose }: { user: CreatedUser; onClose: () =
 export default function UsuariosPage() {
   const currentUserId = useAuthStore((s) => s.userId);
   const currentRole = useAuthStore((s) => s.role);
-  const isOwnerOrAdmin = currentRole === 'OWNER' || currentRole === 'ADMIN';
+  const isOwner = currentRole === 'OWNER';
 
   const { data: users, isLoading } = useUsers();
   const updateRole = useUpdateUserRole();
@@ -274,6 +274,21 @@ export default function UsuariosPage() {
   const [changeRoleUser, setChangeRoleUser] = useState<TenantUser | null>(null);
   const [removeConfirm, setRemoveConfirm] = useState<TenantUser | null>(null);
 
+  if (!isOwner) {
+    return (
+      <div className="flex-1 overflow-y-auto p-4 md:p-6">
+        <Card className="bg-card">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Shield className="mb-3 h-10 w-10 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">
+              Solo el propietario del negocio puede gestionar los usuarios.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-6">
       {/* Header */}
@@ -282,7 +297,7 @@ export default function UsuariosPage() {
           <h1 className="text-2xl font-bold">Usuarios</h1>
           <p className="text-sm text-muted-foreground">{users?.length ?? 0} miembros del equipo</p>
         </div>
-        {isOwnerOrAdmin && (
+        {isOwner && (
           <Button onClick={() => setShowInvite(true)}>
             <Plus className="mr-1 h-4 w-4" />
             Añadir Usuario
@@ -344,7 +359,7 @@ export default function UsuariosPage() {
                     </p>
                   </div>
 
-                  {isOwnerOrAdmin && !isSelf && (
+                  {isOwner && !isSelf && (
                     <div className="flex gap-1">
                       <Button
                         variant="ghost"
@@ -430,7 +445,6 @@ export default function UsuariosPage() {
                     <SelectItem value="CASHIER">Cajero</SelectItem>
                     <SelectItem value="MANAGER">Gerente</SelectItem>
                     <SelectItem value="ADMIN">Administrador</SelectItem>
-                    <SelectItem value="OWNER">Propietario</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

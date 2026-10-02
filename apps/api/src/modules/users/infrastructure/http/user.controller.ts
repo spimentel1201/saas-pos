@@ -32,13 +32,15 @@ export class UserController {
   constructor(private readonly userUseCases: UserUseCases) {}
 
   @Get()
-  @ApiOperation({ summary: 'Listar usuarios del tenant' })
+  @Roles('OWNER', 'ADMIN')
+  @ApiOperation({ summary: 'Listar usuarios del tenant (solo OWNER/ADMIN)' })
   async list(@CurrentUser() user: { sub: string; tenantId: string }) {
     return this.userUseCases.listTenantUsers(user.tenantId);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Obtener usuario del tenant' })
+  @Roles('OWNER', 'ADMIN')
+  @ApiOperation({ summary: 'Obtener usuario del tenant (solo OWNER/ADMIN)' })
   @ApiParam({ name: 'id', description: 'User ID' })
   async getById(
     @CurrentUser() currentUser: { sub: string; tenantId: string },
@@ -64,8 +66,8 @@ export class UserController {
   }
 
   @Patch(':id/role')
-  @Roles('OWNER', 'ADMIN')
-  @ApiOperation({ summary: 'Cambiar rol de usuario (solo OWNER/ADMIN)' })
+  @Roles('OWNER')
+  @ApiOperation({ summary: 'Cambiar rol de usuario (solo OWNER)' })
   @ApiParam({ name: 'id', description: 'User ID' })
   @ApiBody({ type: UpdateUserRoleDto })
   async updateRole(
@@ -103,9 +105,9 @@ export class UserController {
   }
 
   @Delete(':id')
-  @Roles('OWNER', 'ADMIN')
+  @Roles('OWNER')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Eliminar usuario del tenant (solo OWNER/ADMIN)' })
+  @ApiOperation({ summary: 'Eliminar usuario del tenant (solo OWNER)' })
   @ApiParam({ name: 'id', description: 'User ID' })
   async remove(
     @CurrentUser() currentUser: { sub: string; tenantId: string; role: string },
@@ -120,9 +122,9 @@ export class UserController {
   }
 
   @Post('invite')
-  @Roles('OWNER', 'ADMIN')
+  @Roles('OWNER')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Invitar usuario al tenant (solo OWNER/ADMIN)' })
+  @ApiOperation({ summary: 'Invitar usuario al tenant (solo OWNER)' })
   @ApiBody({ type: InviteUserDto })
   async invite(
     @CurrentUser() currentUser: { sub: string; tenantId: string; role: string },

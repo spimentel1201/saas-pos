@@ -36,11 +36,13 @@ export interface CreatedUser extends TenantUser {
 
 export function useUsers() {
   const isAuthenticated = useAuthStore((s) => !!s.accessToken);
+  const role = useAuthStore((s) => s.role);
 
   return useQuery<TenantUser[], ApiError>({
     queryKey: ['users'],
     queryFn: () => api.get('/users'),
-    enabled: isAuthenticated,
+    // GET /users exige OWNER o ADMIN: no disparamos una query que sabemos que devolveria 403.
+    enabled: isAuthenticated && (role === 'OWNER' || role === 'ADMIN'),
     staleTime: 30_000,
   });
 }
