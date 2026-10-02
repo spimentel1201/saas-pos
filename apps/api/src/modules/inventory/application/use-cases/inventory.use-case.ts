@@ -211,7 +211,9 @@ export class InventoryUseCases {
   /** Rechaza sucursales que no pertenezcan al negocio (o inactivas). */
   private async requireBranch(branchCode: string): Promise<void> {
     if (branchCode && !(await this.stockRepo.branchExists(branchCode))) {
-      throw new ConflictError(`La sucursal ${branchCode} no existe o no está activa en este negocio.`);
+      throw new ConflictError(
+        `La sucursal ${branchCode} no existe o no está activa en este negocio.`,
+      );
     }
   }
 

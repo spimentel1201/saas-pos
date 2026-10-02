@@ -138,7 +138,9 @@ export class ProductUseCases {
       );
     }
     if (requested && !codes.includes(requested)) {
-      throw new ConflictError(`La sucursal ${requested} no existe o no está activa en este negocio.`);
+      throw new ConflictError(
+        `La sucursal ${requested} no existe o no está activa en este negocio.`,
+      );
     }
     const first = codes[0];
     if (!first) {
