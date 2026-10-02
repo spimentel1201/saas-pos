@@ -23,6 +23,7 @@ export interface Product {
   maxStock?: number;
   variants: Record<string, unknown>[];
   images: Record<string, unknown>[];
+  imageUrl?: string;
   tags: string[];
   isLowStock: boolean;
   isOutOfStock: boolean;

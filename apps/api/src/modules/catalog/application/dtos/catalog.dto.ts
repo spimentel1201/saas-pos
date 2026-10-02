@@ -390,6 +390,9 @@ export class ProductDTO {
   @ApiProperty()
   images!: Record<string, unknown>[];
 
+  @ApiPropertyOptional()
+  imageUrl?: string;
+
   @ApiProperty()
   tags!: string[];
 

@@ -22,6 +22,7 @@ import { useCategories } from '@/hooks/queries/use-categories';
 import { type StockItem, useStockByBranch } from '@/hooks/queries/use-inventory';
 import { useCartStore } from '@/hooks/use-cart';
 import { formatPEN } from '@/lib/formatters';
+import { productImageUrl } from '@/lib/product-image';
 import { cn } from '@/lib/utils';
 import {
   AlertTriangle,
@@ -301,14 +302,15 @@ function ProductCard({
 }) {
   const status =
     STATUS_CONFIG[product.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.ACTIVE;
+  const imageUrl = productImageUrl(product);
 
   return (
     <div className="rounded-lg border bg-card p-3 transition-colors hover:bg-muted/30">
       <div className="flex gap-3">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-muted">
-          {product.images?.[0] ? (
+          {imageUrl ? (
             <img
-              src={product.images[0] as unknown as string}
+              src={imageUrl}
               alt={product.name}
               className="h-11 w-11 rounded-lg object-cover"
             />
@@ -421,15 +423,16 @@ function ProductRow({
 }) {
   const status =
     STATUS_CONFIG[product.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.ACTIVE;
+  const imageUrl = productImageUrl(product);
 
   return (
     <tr className="border-b last:border-0 hover:bg-muted/50">
       <td className="py-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-            {product.images?.[0] ? (
+            {imageUrl ? (
               <img
-                src={product.images[0] as unknown as string}
+                src={imageUrl}
                 alt={product.name}
                 className="h-10 w-10 rounded-lg object-cover"
               />

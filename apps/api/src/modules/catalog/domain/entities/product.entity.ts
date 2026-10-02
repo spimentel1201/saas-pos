@@ -404,6 +404,7 @@ export class Product {
       maxStock: this.props.maxStock,
       variants: this.props.variants,
       images: this.props.images,
+      imageUrl: this.props.images.find((img) => img.isPrimary)?.url ?? this.props.images[0]?.url,
       tags: this.props.tags,
       isLowStock: this.isLowStock,
       isOutOfStock: this.isOutOfStock,
@@ -437,6 +438,7 @@ export interface ProductDTO {
   maxStock?: number;
   variants: ProductVariant[];
   images: ProductImage[];
+  imageUrl?: string;
   tags: string[];
   isLowStock: boolean;
   isOutOfStock: boolean;
