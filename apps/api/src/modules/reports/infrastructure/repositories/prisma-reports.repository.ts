@@ -48,7 +48,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
       const finalWhere = `WHERE ${conditions.join(' AND ')}`;
 
       // biome-ignore lint/suspicious/noExplicitAny: raw SQL query
-      const rows = await tx.$queryRawUnsafe(
+      const rows = (await tx.$queryRawUnsafe(
         `SELECT s.branch_code, b.name as branch_name,
                 date_trunc('day', s.created_at) as day,
                 si.product_id, p.name as product_name,
@@ -69,7 +69,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
                   si.product_id, p.name, p.category_id, cat.name, s.user_id, u.name, u.email
          ORDER BY day DESC, gross_total DESC`,
         ...params,
-      ) as any[];
+      )) as any[];
 
       return rows.map((r: any) => ({
         branchId: r.branch_code,
@@ -112,7 +112,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
       const where = `WHERE ${conditions.join(' AND ')}`;
 
       // biome-ignore lint/suspicious/noExplicitAny: raw SQL query
-      const rows = await tx.$queryRawUnsafe(
+      const rows = (await tx.$queryRawUnsafe(
         `SELECT s.branch_code, b.name as branch_name,
                 date_trunc('day', s.created_at) as day,
                 p.category_id, coalesce(cat.name, 'Sin categoria') as category_name,
@@ -128,7 +128,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
          GROUP BY s.branch_code, b.name, date_trunc('day', s.created_at), p.category_id, cat.name
          ORDER BY day DESC, gross_total DESC`,
         ...params,
-      ) as any[];
+      )) as any[];
 
       return rows.map((r: any) => ({
         branchId: r.branch_code,
@@ -149,7 +149,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
       const params = branchId ? [branchId] : [];
 
       // biome-ignore lint/suspicious/noExplicitAny: raw SQL query
-      const rows = await tx.$queryRawUnsafe(
+      const rows = (await tx.$queryRawUnsafe(
         `SELECT ist.branch_code, b.name as branch_name,
                 ist.product_id, p.name as product_name,
                 ist.qty, ist.avg_cost,
@@ -160,7 +160,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
          ${where}
          ORDER BY valuation DESC`,
         ...params,
-      ) as any[];
+      )) as any[];
 
       return rows.map((r: any) => ({
         branchId: r.branch_code,
@@ -197,7 +197,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
       const where = `WHERE ${conditions.join(' AND ')}`;
 
       // biome-ignore lint/suspicious/noExplicitAny: raw SQL query
-      const rows = await tx.$queryRawUnsafe(
+      const rows = (await tx.$queryRawUnsafe(
         `SELECT cs.branch_code, b.name as branch_name,
                 date_trunc('day', cs.opened_at) as day,
                 count(*) as session_count,
@@ -211,7 +211,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
          GROUP BY cs.branch_code, b.name, date_trunc('day', cs.opened_at)
          ORDER BY day DESC`,
         ...params,
-      ) as any[];
+      )) as any[];
 
       return rows.map((r: any) => ({
         branchId: r.branch_code,
@@ -250,7 +250,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
       const where = `WHERE ${conditions.join(' AND ')}`;
 
       // biome-ignore lint/suspicious/noExplicitAny: raw SQL query
-      const rows = await tx.$queryRawUnsafe(
+      const rows = (await tx.$queryRawUnsafe(
         `SELECT si.product_id, p.name as product_name,
                 sum(si.qty) as total_sold,
                 sum(si.total) as total_revenue
@@ -262,7 +262,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
          ORDER BY total_revenue DESC
          LIMIT $${idx}`,
         ...params,
-      ) as any[];
+      )) as any[];
 
       return rows.map((r: any) => ({
         productId: r.product_id,
@@ -296,7 +296,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
       const where = `WHERE ${conditions.join(' AND ')}`;
 
       // biome-ignore lint/suspicious/noExplicitAny: raw SQL query
-      const rows = await tx.$queryRawUnsafe(
+      const rows = (await tx.$queryRawUnsafe(
         `SELECT sp.method,
                 count(DISTINCT s.id) as transactions,
                 sum(sp.amount) as total_amount
@@ -306,7 +306,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
          GROUP BY sp.method
          ORDER BY total_amount DESC`,
         ...params,
-      ) as any[];
+      )) as any[];
 
       return rows.map((r: any) => ({
         method: r.method,
@@ -340,7 +340,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
       const where = `WHERE ${conditions.join(' AND ')}`;
 
       // biome-ignore lint/suspicious/noExplicitAny: raw SQL query
-      const rows = await tx.$queryRawUnsafe(
+      const rows = (await tx.$queryRawUnsafe(
         `SELECT extract(hour from s.created_at) as hour,
                 count(*) as sales_count,
                 sum(s.total) as total_amount
@@ -349,7 +349,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
          GROUP BY extract(hour from s.created_at)
          ORDER BY hour`,
         ...params,
-      ) as any[];
+      )) as any[];
 
       return rows.map((r: any) => ({
         hour: Number(r.hour),
@@ -361,7 +361,7 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
 
   async getLowStockCount(): Promise<number> {
     return this.tenantPrisma.withTenant(async (tx) => {
-      const rows = await tx.$queryRawUnsafe(
+      const rows = (await tx.$queryRawUnsafe(
         `SELECT count(*) as count
          FROM products p
          WHERE p.track_stock = true AND p.is_active = true
@@ -369,47 +369,47 @@ export class PrismaReportsRepository implements ReportsRepositoryPort {
              SELECT 1 FROM inventory_stocks ist
              WHERE ist.product_id = p.id AND ist.qty > 0
            )`,
-      ) as any[];
+      )) as any[];
       return Number(rows[0]?.count ?? 0);
     });
   }
 
   async getTodaySalesTotal(): Promise<number> {
     return this.tenantPrisma.withTenant(async (tx) => {
-      const rows = await tx.$queryRawUnsafe(
+      const rows = (await tx.$queryRawUnsafe(
         `SELECT coalesce(sum(total), 0) as total
          FROM sales
          WHERE status = 'COMPLETED' AND created_at >= date_trunc('day', now())`,
-      ) as any[];
+      )) as any[];
       return Number(rows[0]?.total ?? 0);
     });
   }
 
   async getTodayTransactionsCount(): Promise<number> {
     return this.tenantPrisma.withTenant(async (tx) => {
-      const rows = await tx.$queryRawUnsafe(
+      const rows = (await tx.$queryRawUnsafe(
         `SELECT count(*) as count
          FROM sales
          WHERE status = 'COMPLETED' AND created_at >= date_trunc('day', now())`,
-      ) as any[];
+      )) as any[];
       return Number(rows[0]?.count ?? 0);
     });
   }
 
   async getActiveBranchesCount(): Promise<number> {
     return this.tenantPrisma.withTenant(async (tx) => {
-      const rows = await tx.$queryRawUnsafe(
+      const rows = (await tx.$queryRawUnsafe(
         'SELECT count(*) as count FROM branches WHERE active = true',
-      ) as any[];
+      )) as any[];
       return Number(rows[0]?.count ?? 0);
     });
   }
 
   async getActiveCustomersCount(): Promise<number> {
     return this.tenantPrisma.withTenant(async (tx) => {
-      const rows = await tx.$queryRawUnsafe(
+      const rows = (await tx.$queryRawUnsafe(
         'SELECT count(*) as count FROM customers WHERE active = true',
-      ) as any[];
+      )) as any[];
       return Number(rows[0]?.count ?? 0);
     });
   }

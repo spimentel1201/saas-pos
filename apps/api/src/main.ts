@@ -29,7 +29,9 @@ async function bootstrap(): Promise<void> {
   const tenantDomain = config.get<string>('TENANT_BASE_DOMAIN');
   const frontendUrl = config.get<string>('FRONTEND_URL');
   const corsOrigins = isProd
-    ? [tenantDomain ? `https://*.${tenantDomain}` : '', frontendUrl ?? ''].filter((o): o is string => !!o)
+    ? [tenantDomain ? `https://*.${tenantDomain}` : '', frontendUrl ?? ''].filter(
+        (o): o is string => !!o,
+      )
     : true;
 
   app.enableCors({

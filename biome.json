@@ -31,7 +31,11 @@
       "recommended": true,
       "style": { "useImportType": "off", "useExportType": "off", "noNonNullAssertion": "off" },
       "complexity": { "noThisInStatic": "off", "noUselessConstructor": "off" },
-      "suspicious": { "noExplicitAny": "warn", "noConfusingVoidType": "off", "noArrayIndexKey": "off" },
+      "suspicious": {
+        "noExplicitAny": "warn",
+        "noConfusingVoidType": "off",
+        "noArrayIndexKey": "off"
+      },
       "correctness": { "noUnusedVariables": "warn", "noUnusedImports": "warn" }
     }
   },
