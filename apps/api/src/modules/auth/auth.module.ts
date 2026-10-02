@@ -25,6 +25,6 @@ import { PWD_HASHER, TENANT_SCHEMA_CREATOR, TOKEN_SERVICE, USER_REPO } from './t
     { provide: TOKEN_SERVICE, useClass: JwtTokenService },
     { provide: TENANT_SCHEMA_CREATOR, useClass: SqlTenantSchemaCreator },
   ],
-  exports: [PassportModule, JwtModule, TOKEN_SERVICE],
+  exports: [PassportModule, JwtModule, TOKEN_SERVICE, PWD_HASHER],
 })
 export class AuthModule {}

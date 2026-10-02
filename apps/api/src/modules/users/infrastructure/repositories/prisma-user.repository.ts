@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import { ConflictError, NotFoundError } from '../../../../shared/domain/errors/domain-error.js';
 import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.service.js';
 import type { Role } from '../../../auth/domain/entities/user.entity.js';
-import type { UserRepositoryPort } from '../../application/ports/user.repository.port.js';
+import type {
+  CreateUserParams,
+  UserRepositoryPort,
+} from '../../application/ports/user.repository.port.js';
 import type { TenantUserInfo } from '../../domain/entities/user-info.entity.js';
 
 @Injectable()
@@ -105,5 +109,40 @@ export class PrismaUserRepository implements UserRepositoryPort {
       email,
       createdAt: new Date(),
     };
+  }
+
+  async createUserInTenant(params: CreateUserParams): Promise<TenantUserInfo> {
+    const email = params.email.trim().toLowerCase();
+    const name = params.name.trim();
+
+    const existing = await this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+    if (existing) {
+      throw new ConflictError(`Ya existe una cuenta con el email ${email}`);
+    }
+
+    const userId = await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: { email, name, passwordHash: params.passwordHash },
+      });
+      await tx.tenantUser.create({
+        data: { userId: user.id, tenantId: params.tenantId, role: params.role },
+      });
+      return user.id;
+    });
+
+    const member = await this.findByUserAndTenant(userId, params.tenantId);
+    if (!member) throw new NotFoundError('Usuario no encontrado tras crearlo');
+    return member;
+  }
+
+  async updatePassword(userId: string, passwordHash: string): Promise<void> {
+    const result = await this.prisma.user.updateMany({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+    if (result.count === 0) throw new NotFoundError(`Usuario ${userId} no encontrado`);
   }
 }

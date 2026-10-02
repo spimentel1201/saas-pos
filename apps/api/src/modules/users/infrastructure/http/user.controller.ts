@@ -13,7 +13,12 @@ import {
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../../../shared/infrastructure/http/current-user.decorator.js';
 import { TenantRequired } from '../../../../shared/infrastructure/multi-tenant/tenant-required.decorator.js';
-import { InviteUserDto, UpdateUserRoleDto } from '../../application/dto/user.dto.js';
+import {
+  CreateUserDto,
+  InviteUserDto,
+  ResetPasswordDto,
+  UpdateUserRoleDto,
+} from '../../application/dto/user.dto.js';
 import { UserUseCases } from '../../application/use-cases/user.use-case.js';
 import { Roles } from '../../domain/decorators/roles.decorator.js';
 import { RolesGuard } from '../../domain/guards/roles.guard.js';
@@ -42,6 +47,22 @@ export class UserController {
     return this.userUseCases.getUserInTenant(id, currentUser.tenantId);
   }
 
+  @Post()
+  @Roles('OWNER')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Crear usuario en el tenant con clave (solo OWNER)' })
+  @ApiBody({ type: CreateUserDto })
+  async create(
+    @CurrentUser() currentUser: { sub: string; tenantId: string; role: string },
+    @Body() dto: CreateUserDto,
+  ) {
+    return this.userUseCases.create(
+      currentUser.tenantId,
+      dto,
+      currentUser.role as 'OWNER' | 'ADMIN' | 'MANAGER' | 'CASHIER',
+    );
+  }
+
   @Patch(':id/role')
   @Roles('OWNER', 'ADMIN')
   @ApiOperation({ summary: 'Cambiar rol de usuario (solo OWNER/ADMIN)' })
@@ -58,6 +79,27 @@ export class UserController {
       dto.role,
       currentUser.role as 'OWNER' | 'ADMIN' | 'MANAGER' | 'CASHIER',
     );
+  }
+
+  @Patch(':id/password')
+  @Roles('OWNER')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Restablecer la clave de un usuario (solo OWNER)' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiBody({ type: ResetPasswordDto })
+  async resetPassword(
+    @CurrentUser() currentUser: { sub: string; tenantId: string; role: string },
+    @Param('id') id: string,
+    @Body() dto: ResetPasswordDto,
+  ) {
+    await this.userUseCases.resetPassword(
+      currentUser.tenantId,
+      id,
+      dto.password,
+      currentUser.role as 'OWNER' | 'ADMIN' | 'MANAGER' | 'CASHIER',
+      currentUser.sub,
+    );
+    return { message: 'Clave actualizada' };
   }
 
   @Delete(':id')

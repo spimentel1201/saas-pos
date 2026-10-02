@@ -20,6 +20,18 @@ export interface InviteUserInput {
   role?: Role;
 }
 
+export interface CreateUserInput {
+  name: string;
+  email: string;
+  role?: Role;
+  password?: string;
+}
+
+/** El backend solo devuelve `temporaryPassword` si la generó él (no la escribió el owner). */
+export interface CreatedUser extends TenantUser {
+  temporaryPassword?: string;
+}
+
 // ---- Queries ----
 
 export function useUsers() {
@@ -51,6 +63,28 @@ export function useInviteUser() {
 
   return useMutation<TenantUser, ApiError, InviteUserInput>({
     mutationFn: (data) => api.post('/users/invite', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+}
+
+export function useCreateUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation<CreatedUser, ApiError, CreateUserInput>({
+    mutationFn: (data) => api.post('/users', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+}
+
+export function useResetPassword() {
+  const queryClient = useQueryClient();
+
+  return useMutation<{ message: string }, ApiError, { id: string; password: string }>({
+    mutationFn: ({ id, password }) => api.patch(`/users/${id}/password`, { password }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },

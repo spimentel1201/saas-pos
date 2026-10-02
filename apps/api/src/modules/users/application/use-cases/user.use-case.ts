@@ -1,6 +1,9 @@
+import { randomInt } from 'node:crypto';
 import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { Role } from '../../../auth/domain/entities/user.entity.js';
-import type { UserListItemDTO } from '../../domain/entities/user-info.entity.js';
+import type { PasswordHasherPort } from '../../../auth/domain/services/password-hasher.port.js';
+import { PWD_HASHER } from '../../../auth/tokens.js';
+import type { TenantUserInfo, UserListItemDTO } from '../../domain/entities/user-info.entity.js';
 import { USER_REPO } from '../../users.tokens.js';
 import type { UserRepositoryPort } from '../ports/user.repository.port.js';
 
@@ -11,9 +14,41 @@ const ROLE_HIERARCHY: Record<Role, number> = {
   CASHIER: 0,
 };
 
+/** Sin caracteres ambiguos (0/O, 1/l/I) para que la clave temporal se pueda dictar. */
+const PASSWORD_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+const TEMP_PASSWORD_LENGTH = 10;
+
+function generateTemporaryPassword(): string {
+  let password = '';
+  for (let i = 0; i < TEMP_PASSWORD_LENGTH; i += 1) {
+    password += PASSWORD_ALPHABET[randomInt(PASSWORD_ALPHABET.length)];
+  }
+  return password;
+}
+
+export interface CreateUserInput {
+  name: string;
+  email: string;
+  role?: Role;
+  password?: string;
+}
+
+export type CreateUserResult = TenantUserInfo & { temporaryPassword?: string };
+
 @Injectable()
 export class UserUseCases {
-  constructor(@Inject(USER_REPO) private readonly userRepo: UserRepositoryPort) {}
+  constructor(
+    @Inject(USER_REPO) private readonly userRepo: UserRepositoryPort,
+    @Inject(PWD_HASHER) private readonly hasher: PasswordHasherPort,
+  ) {}
+
+  private assertCanManage(actorRole: Role, targetRole: Role): void {
+    if (ROLE_HIERARCHY[actorRole] <= ROLE_HIERARCHY[targetRole]) {
+      throw new ForbiddenException(
+        'No puedes gestionar usuarios con un rol igual o superior al tuyo',
+      );
+    }
+  }
 
   async listTenantUsers(tenantId: string): Promise<UserListItemDTO[]> {
     const users = await this.userRepo.listByTenant(tenantId);
@@ -38,6 +73,40 @@ export class UserUseCases {
       email: user.email,
       createdAt: user.createdAt,
     };
+  }
+
+  async create(tenantId: string, dto: CreateUserInput, actorRole: Role): Promise<CreateUserResult> {
+    const role = dto.role ?? 'CASHIER';
+    this.assertCanManage(actorRole, role);
+
+    const wasProvided = Boolean(dto.password);
+    const plainPassword = dto.password ?? generateTemporaryPassword();
+    const passwordHash = await this.hasher.hash(plainPassword);
+
+    const created = await this.userRepo.createUserInTenant({
+      tenantId,
+      name: dto.name,
+      email: dto.email,
+      role,
+      passwordHash,
+    });
+
+    return wasProvided ? created : { ...created, temporaryPassword: plainPassword };
+  }
+
+  async resetPassword(
+    tenantId: string,
+    userId: string,
+    newPassword: string,
+    actorRole: Role,
+    actorId: string,
+  ): Promise<void> {
+    const target = await this.userRepo.findByUserAndTenant(userId, tenantId);
+    if (!target) throw new NotFoundException('Usuario no encontrado en este tenant');
+    if (userId !== actorId) this.assertCanManage(actorRole, target.role);
+
+    const passwordHash = await this.hasher.hash(newPassword);
+    await this.userRepo.updatePassword(userId, passwordHash);
   }
 
   async updateRole(

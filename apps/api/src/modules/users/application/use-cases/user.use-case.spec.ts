@@ -1,5 +1,6 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { PasswordHasherPort } from '../../../auth/domain/services/password-hasher.port.js';
 import type { TenantUserInfo } from '../../domain/entities/user-info.entity.js';
 import type { UserRepositoryPort } from '../ports/user.repository.port.js';
 import { UserUseCases } from './user.use-case.js';
@@ -7,6 +8,7 @@ import { UserUseCases } from './user.use-case.js';
 describe('UserUseCases', () => {
   let userUseCases: UserUseCases;
   let mockUserRepo: UserRepositoryPort;
+  let mockHasher: PasswordHasherPort;
 
   const mockTenantId = 'tenant_123';
   const mockUserId = 'user_456';
@@ -18,8 +20,14 @@ describe('UserUseCases', () => {
       updateRole: vi.fn(),
       removeFromTenant: vi.fn(),
       inviteToTenant: vi.fn(),
+      createUserInTenant: vi.fn(),
+      updatePassword: vi.fn(),
     };
-    userUseCases = new UserUseCases(mockUserRepo);
+    mockHasher = {
+      hash: vi.fn().mockResolvedValue('hashed-password'),
+      compare: vi.fn().mockResolvedValue(true),
+    };
+    userUseCases = new UserUseCases(mockUserRepo, mockHasher);
   });
 
   describe('listTenantUsers', () => {
@@ -204,6 +212,126 @@ describe('UserUseCases', () => {
 
       expect(result.email).toBe('new@test.com');
       expect(result.role).toBe('CASHIER');
+    });
+  });
+
+  describe('create', () => {
+    const createdUser: TenantUserInfo = {
+      userId: 'new_user',
+      tenantId: mockTenantId,
+      role: 'CASHIER',
+      name: 'Ana Torres',
+      email: 'ana@test.com',
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    };
+
+    it('generates and returns a temporary password when none is provided', async () => {
+      vi.mocked(mockUserRepo.createUserInTenant).mockResolvedValue(createdUser);
+
+      const result = await userUseCases.create(
+        mockTenantId,
+        { name: 'Ana Torres', email: 'ana@test.com' },
+        'OWNER',
+      );
+
+      expect(result.temporaryPassword).toMatch(/^[A-Za-z0-9]{10}$/);
+      expect(mockHasher.hash).toHaveBeenCalledWith(result.temporaryPassword);
+      expect(mockUserRepo.createUserInTenant).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenantId: mockTenantId,
+          role: 'CASHIER',
+          passwordHash: 'hashed-password',
+        }),
+      );
+    });
+
+    it('does not leak the password back when the owner typed one', async () => {
+      vi.mocked(mockUserRepo.createUserInTenant).mockResolvedValue(createdUser);
+
+      const result = await userUseCases.create(
+        mockTenantId,
+        { name: 'Ana Torres', email: 'ana@test.com', password: 'clavefija123' },
+        'OWNER',
+      );
+
+      expect(result.temporaryPassword).toBeUndefined();
+      expect(mockHasher.hash).toHaveBeenCalledWith('clavefija123');
+    });
+
+    it('throws ForbiddenException when creating a role equal or higher than the actor', async () => {
+      await expect(
+        userUseCases.create(
+          mockTenantId,
+          { name: 'Otro', email: 'otro@test.com', role: 'OWNER' },
+          'ADMIN',
+        ),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(mockUserRepo.createUserInTenant).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('resetPassword', () => {
+    const cashier: TenantUserInfo = {
+      userId: mockUserId,
+      tenantId: mockTenantId,
+      role: 'CASHIER',
+      name: 'Cashier User',
+      email: 'cashier@test.com',
+      createdAt: new Date(),
+    };
+
+    it('hashes and stores the new password', async () => {
+      vi.mocked(mockUserRepo.findByUserAndTenant).mockResolvedValue(cashier);
+
+      await userUseCases.resetPassword(
+        mockTenantId,
+        mockUserId,
+        'nuevaclave123',
+        'OWNER',
+        'owner_id',
+      );
+
+      expect(mockHasher.hash).toHaveBeenCalledWith('nuevaclave123');
+      expect(mockUserRepo.updatePassword).toHaveBeenCalledWith(mockUserId, 'hashed-password');
+    });
+
+    it('throws ForbiddenException when the target has an equal or higher role', async () => {
+      vi.mocked(mockUserRepo.findByUserAndTenant).mockResolvedValue({
+        ...cashier,
+        role: 'ADMIN',
+      });
+
+      await expect(
+        userUseCases.resetPassword(mockTenantId, mockUserId, 'nuevaclave123', 'ADMIN', 'other_id'),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(mockUserRepo.updatePassword).not.toHaveBeenCalled();
+    });
+
+    it('allows resetting your own password regardless of hierarchy', async () => {
+      vi.mocked(mockUserRepo.findByUserAndTenant).mockResolvedValue({
+        ...cashier,
+        role: 'OWNER',
+      });
+
+      await userUseCases.resetPassword(
+        mockTenantId,
+        mockUserId,
+        'nuevaclave123',
+        'OWNER',
+        mockUserId,
+      );
+
+      expect(mockUserRepo.updatePassword).toHaveBeenCalledWith(mockUserId, 'hashed-password');
+    });
+
+    it('throws NotFoundException if the user is not in the tenant', async () => {
+      vi.mocked(mockUserRepo.findByUserAndTenant).mockResolvedValue(null);
+
+      await expect(
+        userUseCases.resetPassword(mockTenantId, mockUserId, 'nuevaclave123', 'OWNER', 'owner_id'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });
