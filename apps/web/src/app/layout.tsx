@@ -23,19 +23,55 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
 });
 
+// metadataBase: resuelve las URLs de las imágenes sociales. Usa la variable pública si
+// existe, cae a VERCEL_URL en producción y a localhost en desarrollo; sin esto Next
+// emite el warning "metadataBase property in metadata export is not set" y las OG
+// images apuntarían a localhost:3000 (puerto equivocado).
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3001');
+
 export const metadata = {
-  title: 'POS SaaS — Punto de venta multi-sucursal en la nube',
+  metadataBase: new URL(siteUrl),
+  title: 'POS SaaS: Punto de venta multi-sucursal en la nube',
   description:
     'SaaS POS para comercios de América Latina: inventario, ventas, caja, reportes y códigos de barra/QR.',
   manifest: '/manifest.json',
+  openGraph: {
+    type: 'website',
+    locale: 'es_PE',
+    siteName: 'POS SaaS',
+    title: 'POS SaaS: Punto de venta multi-sucursal en la nube',
+    description:
+      'SaaS POS para comercios de América Latina: inventario, ventas, caja, reportes y códigos de barra/QR.',
+    images: [
+      {
+        url: '/pos-venta.png',
+        width: 1280,
+        height: 920,
+        alt: 'Punto de venta POS SaaS con carrito y totales',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'POS SaaS: Punto de venta multi-sucursal en la nube',
+    description:
+      'Inventario, ventas, caja y reportes. Funciona offline. Multi-sucursal. Diseñado para comercios reales en Perú.',
+    images: ['/pos-venta.png'],
+  },
 };
 
+// Sin maximumScale/userScalable: bloquear el zoom rompe accesibilidad (WCAG 1.4.4).
+// themeColor alineado a los tokens de :root y .dark en globals.css (era #6366f1, que no
+// coincidía con --primary: 221 83% 53%).
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  themeColor: '#6366f1',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#fafafa' },
+    { media: '(prefers-color-scheme: dark)', color: '#0a0d14' },
+  ],
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -46,6 +82,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       className={`${plusJakarta.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body className="font-sans antialiased">
+        <noscript>
+          {/* Motion deja opacity:0 en el HTML de partida y solo lo anima cuando el
+              navegador ejecuta requestAnimationFrame. Sin JS, o con la pestaña en
+              segundo plano, la landing entera quedaría invisible. Esta hoja la recupera. */}
+          <style>{'[style*="opacity:0"]{opacity:1!important;transform:none!important}'}</style>
+        </noscript>
         <ServiceWorkerRegistration />
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           <QueryProvider>{children}</QueryProvider>

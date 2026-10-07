@@ -77,8 +77,37 @@
   *::before,
   *::after {
     border-color: hsl(var(--border));
-    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   }
+
+  /* Movimiento: nunca transiciona todo el documento (retardo global en cada reflow). */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Modo claro de la landing: menos blanco.
+   El token global es casi blanco (:root --background: 0 0% 98% con tarjetas
+   0 0% 100%, brillo 228/255) y aquí se pide reducirlo. Va FUERA de @layer para
+   que gane sobre :root, y scopeado con :has(.landing) para no tocar la app.
+   --muted-foreground y --primary se bajan de paso: con un fondo más oscuro,
+   los valores globales caían a 4.0:1 y 4.2:1 (fallo AA). */
+:root:not(.dark):has(.landing) {
+  --background: 220 16% 92%;
+  --card: 220 16% 97%;
+  --popover: 220 16% 97%;
+  --secondary: 220 14% 93%;
+  --muted: 220 14% 93%;
+  --muted-foreground: 215 16% 40%;
+  --border: 220 13% 86%;
+  --primary: 221 83% 50%;
+  --ring: 221 83% 50%;
 }
 
 @layer components {
@@ -91,12 +120,6 @@
     font-size: 0.75rem;
     font-weight: 600;
     color: hsl(var(--muted-foreground));
-  }
-
-  .grid {
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   }
 
   .card {
@@ -119,18 +142,28 @@
 }
 
 @layer base {
+  /* Escala fluida (AGENTS.md: usar clamp(), no tamaños fijos). */
   h1 {
-    font-size: clamp(2.5rem, 5vw, 4rem);
-    letter-spacing: -0.02em;
-    margin: 0 0 1rem;
-    font-weight: 700;
+    font-size: clamp(2rem, 3.6vw, 2.5rem);
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    margin: 0;
+    font-weight: 800;
+    max-width: none;
   }
 
   h2 {
-    font-size: 1.75rem;
-    margin: 2rem 0 1rem;
-    letter-spacing: -0.01em;
-    font-weight: 600;
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    margin: 0;
+    font-weight: 800;
+    max-width: none;
+  }
+
+  h3 {
+    margin: 0;
+    font-weight: 700;
   }
 
   p {
@@ -140,145 +173,12 @@
   }
 }
 
-/* Landing animations */
-@keyframes fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+/* El movimiento de la landing lo gestiona Motion (motion/react) con useReducedMotion().
+   Se eliminaron fade-up / slide-in / scale-in / pulse-glow / float: tres de ellos eran
+   bucles infinitos sin motivo y ninguno respetaba prefers-reduced-motion. */
 
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slide-in-left {
-  from {
-    opacity: 0;
-    transform: translateX(-32px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes slide-in-right {
-  from {
-    opacity: 0;
-    transform: translateX(32px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes scale-in {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes pulse-glow {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4);
-  }
-  50% {
-    box-shadow: 0 0 0 8px hsl(var(--primary) / 0);
-  }
-}
-
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-6px);
-  }
-}
-
-.animate-fade-up {
-  animation: fade-up 0.6s ease-out both;
-}
-
-.animate-fade-in {
-  animation: fade-in 0.5s ease-out both;
-}
-
-.animate-slide-in-left {
-  animation: slide-in-left 0.6s ease-out both;
-}
-
-.animate-slide-in-right {
-  animation: slide-in-right 0.6s ease-out both;
-}
-
-.animate-scale-in {
-  animation: scale-in 0.5s ease-out both;
-}
-
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-/* Stagger delays */
-.delay-100 {
-  animation-delay: 100ms;
-}
-.delay-200 {
-  animation-delay: 200ms;
-}
-.delay-300 {
-  animation-delay: 300ms;
-}
-.delay-400 {
-  animation-delay: 400ms;
-}
-.delay-500 {
-  animation-delay: 500ms;
-}
-.delay-600 {
-  animation-delay: 600ms;
-}
-.delay-700 {
-  animation-delay: 700ms;
-}
-.delay-800 {
-  animation-delay: 800ms;
-}
-
-/* Scroll-triggered (hidden by default, revealed by JS) */
-.reveal {
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
-}
-
-.reveal.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
+/* `.reveal { opacity: 0 }` se eliminó: dejaba la sección invisible si el JS no corría.
+   Motion oculta con estilos inline, así que si no hay JS tampoco hay React renderizado. */
 
 /* Feature card hover */
 .feature-card {
@@ -331,9 +231,11 @@
   transform: translateX(4px);
 }
 
-/* CTA gradient */
+/* Cierre: azul fijo y profundo en vez del token --primary. El token cambia de brillo
+   según el tema (#2563eb en claro, #3c83f6 en oscuro) y sobre el segundo la línea de
+   texto blanco caía a 3.6:1 (fallo AA). Ambos extremos quedan por encima de 5.5:1. */
 .cta-gradient {
-  background: linear-gradient(135deg, hsl(var(--primary)), hsl(217 91% 60%));
+  background: linear-gradient(135deg, hsl(217 91% 45%), hsl(221 83% 35%));
   position: relative;
   overflow: hidden;
 }
@@ -342,32 +244,36 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 30% 50%, hsl(0 0% 100% / 0.1), transparent 60%);
+  background: radial-gradient(ellipse at 30% 50%, hsl(0 0% 100% / 0.06), transparent 60%);
   pointer-events: none;
 }
 
-/* Hero mockup glow */
-.mockup-glow {
-  box-shadow: 0 0 0 1px hsl(var(--border)), 0 20px 60px -12px hsl(var(--primary) / 0.15), 0 8px 24px
-    -8px hsl(0 0% 0% / 0.1);
+/* Marco de la captura real del producto (reemplaza al mockup hecho con <div>). */
+.shot-frame {
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: hsl(var(--card));
+  box-shadow: 0 28px 64px -28px hsl(var(--primary) / 0.3), 0 12px 32px -18px hsl(0 0% 0% / 0.35);
 }
 
-.dark .mockup-glow {
-  box-shadow: 0 0 0 1px hsl(var(--border)), 0 20px 60px -12px hsl(var(--primary) / 0.2), 0 8px 24px
-    -8px hsl(0 0% 100% / 0.03);
+.dark .shot-frame {
+  box-shadow: 0 28px 64px -28px hsl(var(--primary) / 0.35), 0 12px 32px -18px hsl(0 0% 0% / 0.65);
 }
 
-/* Scroll indicator bounce */
-@keyframes bounce-down {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(6px);
-  }
+/* Feedback táctil al pulsar (§4.5 Interactive UI States). */
+.btn-press {
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease,
+    border-color 0.15s ease, color 0.15s ease;
 }
 
-.animate-bounce-down {
-  animation: bounce-down 1.5s ease-in-out infinite;
+.btn-press:active {
+  transform: scale(0.98);
+}
+
+/* Cifras: los precios y totales del producto ya van en monoespaciada, la landing sigue esa regla. */
+.num {
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
