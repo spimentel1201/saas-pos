@@ -12,6 +12,12 @@
     --popover-foreground: 222 47% 11%;
     --primary: 221 83% 53%;
     --primary-foreground: 0 0% 100%;
+    /* Fondo sólido de los botones primarios. Blanco sobre --primary da 5.77:1 en claro,
+       pero en oscuro --primary sube a 60% de luz y cae a 3.64:1 (AA pide 4.5 a 14px).
+       No se arregla bajando --primary: el texto en --primary sobre --background necesita
+       lo contrario y las dos restricciones se contradicen con un solo token. */
+    --primary-cta: 221 83% 50%;
+    --primary-cta-hover: 221 83% 44%;
     --secondary: 220 14% 96%;
     --secondary-foreground: 222 47% 11%;
     --muted: 220 14% 96%;
@@ -42,6 +48,11 @@
     --popover-foreground: 215 20% 90%;
     --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
+    /* Versión oscura: 6.00:1 de blanco sobre el fondo (4.87:1 al pasar el cursor).
+       --primary se queda en 60% porque el texto en --primary sobre --background sí lo
+       necesita claro; solo el fondo sólido se oscurece. */
+    --primary-cta: 217 91% 45%;
+    --primary-cta-hover: 217 91% 51%;
     --secondary: 222 33% 12%;
     --secondary-foreground: 215 20% 90%;
     --muted: 222 33% 12%;
