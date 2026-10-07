@@ -110,18 +110,64 @@
   --ring: 221 83% 50%;
 }
 
-@layer components {
-  .tag {
-    display: inline-block;
-    border-radius: 9999px;
-    border: 1px solid hsl(var(--border));
-    background: hsl(var(--background));
-    padding: 0.125rem 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: hsl(var(--muted-foreground));
-  }
+/* Escala tipográfica de la landing. Fuera de @layer para ganar sobre las reglas
+   globales de @layer base sin tocar la app: el h1 sube de 40px a 42px y el h2
+   baja de 36px a 26px, así el ratio pasa de 1.11:1 a 1.6:1. Ahí estaba la
+   jerarquía plana: seis secciones gritando casi como el titular.
+   El h1 no sube más de 42px porque con el split 7/5 la columna mide ~662px y
+   "Tu punto de venta en la nube." son 29 caracteres en bold 800 con tracking
+   -0.03em; ~45px es el techo antes de romper las dos líneas del titular. */
+.landing h1 {
+  font-size: clamp(2.25rem, 3.8vw, 2.625rem);
+}
 
+.landing h2 {
+  font-size: clamp(1.375rem, 2.2vw, 1.625rem);
+}
+
+/* Navegación por anclas de la cabecera. Scopeado con :has para no afectar al
+   resto de rutas; el guard de prefers-reduced-motion de más abajo ya fuerza
+   scroll-behavior: auto !important. */
+html:has(.landing) {
+  scroll-behavior: smooth;
+}
+
+/* Aurora del hero (WebGL crudo, montado desde page.tsx).
+   La MÁSCARA es la garantía de contraste: en desktop apaga el canvas bajo la
+   columna de texto del split 7/5, así el H1 y las cifras quedan sobre fondo
+   sólido y el ratio AA no se mueve. En móvil el texto ocupa el alto, así que
+   la máscara gira a vertical y el degradado solo asoma bajo la captura.
+   pointer-events: none (y heredado por el canvas) para no tapar los CTA. */
+.aurora-wrap {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.35) 34%, #000 62%);
+  mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.35) 34%, #000 62%);
+}
+
+@media (max-width: 1023px) {
+  .aurora-wrap {
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.3) 52%, #000 88%);
+    mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.3) 52%, #000 88%);
+  }
+}
+
+.aurora {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Sin WebGL (o shader que no compila): el mismo degradado en CSS, estático. */
+.aurora[data-fallback="true"] {
+  background: radial-gradient(58% 70% at 78% 28%, hsl(var(--primary) / 0.28), transparent 70%),
+    radial-gradient(48% 60% at 94% 82%, hsl(263 70% 50% / 0.2), transparent 72%);
+}
+
+@layer components {
   .card {
     border-radius: 0.75rem;
     background: hsl(var(--card));
@@ -180,18 +226,7 @@
 /* `.reveal { opacity: 0 }` se eliminó: dejaba la sección invisible si el JS no corría.
    Motion oculta con estilos inline, así que si no hay JS tampoco hay React renderizado. */
 
-/* Feature card hover */
-.feature-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-}
-
-.feature-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px hsl(var(--primary) / 0.08);
-  border-color: hsl(var(--primary) / 0.3);
-}
-
-/* Pricing card highlight */
+/* Plan destacado: es el único borde azul de la sección de precios. */
 .pricing-highlight {
   position: relative;
   border: 2px solid hsl(var(--primary));
@@ -205,30 +240,6 @@
   border-radius: inherit;
   background: linear-gradient(135deg, hsl(var(--primary) / 0.1), transparent 50%);
   pointer-events: none;
-}
-
-/* Testimonial card */
-.testimonial-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.testimonial-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px hsl(0 0% 0% / 0.06);
-}
-
-.dark .testimonial-card:hover {
-  box-shadow: 0 4px 16px hsl(0 0% 100% / 0.03);
-}
-
-/* Pain point item */
-.pain-item {
-  transition: background-color 0.2s ease, transform 0.2s ease;
-}
-
-.pain-item:hover {
-  background-color: hsl(var(--destructive) / 0.05);
-  transform: translateX(4px);
 }
 
 /* Cierre: azul fijo y profundo en vez del token --primary. El token cambia de brillo

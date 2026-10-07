@@ -33,29 +33,29 @@ const siteUrl =
 
 export const metadata = {
   metadataBase: new URL(siteUrl),
-  title: 'POS SaaS: Punto de venta multi-sucursal en la nube',
+  title: 'Salkhi: Punto de venta multi-sucursal en la nube',
   description:
-    'SaaS POS para comercios de América Latina: inventario, ventas, caja, reportes y códigos de barra/QR.',
+    'POS en la nube para comercios de Perú: inventario, ventas, caja, reportes y códigos de barra/QR.',
   manifest: '/manifest.json',
   openGraph: {
     type: 'website',
     locale: 'es_PE',
-    siteName: 'POS SaaS',
-    title: 'POS SaaS: Punto de venta multi-sucursal en la nube',
+    siteName: 'Salkhi',
+    title: 'Salkhi: Punto de venta multi-sucursal en la nube',
     description:
-      'SaaS POS para comercios de América Latina: inventario, ventas, caja, reportes y códigos de barra/QR.',
+      'POS en la nube para comercios de Perú: inventario, ventas, caja, reportes y códigos de barra/QR.',
     images: [
       {
         url: '/pos-venta.png',
-        width: 1280,
-        height: 920,
-        alt: 'Punto de venta POS SaaS con carrito y totales',
+        width: 1296,
+        height: 886,
+        alt: 'Punto de venta Salkhi con carrito y totales',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'POS SaaS: Punto de venta multi-sucursal en la nube',
+    title: 'Salkhi: Punto de venta multi-sucursal en la nube',
     description:
       'Inventario, ventas, caja y reportes. Funciona offline. Multi-sucursal. Diseñado para comercios reales en Perú.',
     images: ['/pos-venta.png'],
