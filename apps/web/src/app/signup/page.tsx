@@ -76,7 +76,7 @@ export default function SignupPage() {
       >
         <div className="absolute left-4 top-4" suppressHydrationWarning>
           <Link href="/" className="text-lg font-bold tracking-tight hover:opacity-80">
-            POS SaaS
+            Salkhi
           </Link>
         </div>
         <div className="absolute right-4 top-4" suppressHydrationWarning>

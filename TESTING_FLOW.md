@@ -1,4 +1,4 @@
-# POS SaaS - Flujo de Pruebas y Endpoints
+# Salkhi - Flujo de Pruebas y Endpoints
 
 Este documento describe el flujo operativo del sistema backend (API NestJS) y las acciones necesarias para probar la funcionalidad implementada.
 

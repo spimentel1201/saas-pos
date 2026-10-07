@@ -1,5 +1,5 @@
 ---
-name: "POS SaaS"
+name: "Salkhi"
 description: "Cloud-first POS multi-tenant para comercios peruanos — offline-first, dark mode global, es-PE"
 colors:
   # Dark mode (primary - cajeros)
@@ -139,7 +139,7 @@ components:
     paddingY: "64px"
 ---
 
-# Design System: POS SaaS
+# Design System: Salkhi
 
 ## Overview
 
