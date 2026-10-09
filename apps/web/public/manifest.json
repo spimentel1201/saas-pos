@@ -1,6 +1,6 @@
 {
-  "name": "POS SaaS",
-  "short_name": "POS",
+  "name": "Salkhi",
+  "short_name": "Salkhi",
   "description": "Punto de venta multi-sucursal en la nube",
   "start_url": "/app",
   "display": "standalone",

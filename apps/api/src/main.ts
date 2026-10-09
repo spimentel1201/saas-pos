@@ -61,7 +61,7 @@ async function bootstrap(): Promise<void> {
   // Disponible en /api/v1/docs (solo en dev/staging)
   if (!isProd || config.get<string>('ENABLE_SWAGGER') === 'true') {
     const swaggerConfig = new DocumentBuilder()
-      .setTitle('POS SaaS API')
+      .setTitle('Salkhi API')
       .setDescription(
         'API del SaaS POS multi-tenant. RFC7807 Problem Details en errores. ' +
           'Endpoints tenant-scoped requieren header `X-Tenant-Slug` o subdomain.',

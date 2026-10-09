@@ -1,4 +1,4 @@
-# POS SaaS — MVP
+# Salkhi — MVP
 
 SaaS multi-tenant de Punto de Venta (POS) cloud-first, multi-sucursal. MVP enfocado en comercios minoristas de América Latina.
 

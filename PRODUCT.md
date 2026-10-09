@@ -65,7 +65,7 @@ SaaS POS multi-tenant para comercios minoristas en Perú. Cloud-first con sincro
 
 ## Brand Commitments
 
-- **Nombre:** POS SaaS (working title)
+- **Nombre:** Salkhi
 - **Voice:** Práctico, directo, sin jerga técnica innecesaria. "Tú" informal pero respetuoso.
 - **Assets:** Logo placeholder, sin brand book formal aún.
 - **Color commitment:** Indigo (#2563EB) como acento principal (ya en globals.css). Dark mode obligatorio.
